@@ -14,29 +14,14 @@ def gaussian(coordinates, height, mean, spread):
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
 
-SEED = 5 #np.random.randint(0, 100)
-
 center = np.random.uniform(-0.9, 0.9, 2)
-def landscape(coordinates):
-    reward_scape = gaussian(coordinates, 1, center, 0.8)
-    # np.random.seed(SEED)
-    if N_DISTRACTORS == 0:
-        return reward_scape
-    hills = []
-    hills.append(reward_scape)
-    for i in range(N_DISTRACTORS):
-        height = np.random.uniform(0.2, 0.7)
-        mean = np.random.uniform(-1, 1, 2)
-        spread = np.random.uniform(0.1, 0.4)
-        hills.append(gaussian(coordinates, height, mean, spread))
-    # return np.max(hills)
-    return np.maximum.reduce(hills)
+
 
 def new_sigmoid(x, m=0, a=0):
     """ Returns an output between -1 and 1 """
     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
 
-reward_fn = landscape
+# reward_fn = landscape
 
 # layer sizes
 HVC_SIZE = 100
@@ -116,12 +101,33 @@ class Environment:
         self.ra_size = ra_size
         self.mc_size = mc_size
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
+        self.heights = []
+        self.means = []
+        self.spreads = []
+        for _ in range(N_DISTRACTORS):
+            self.heights.append(np.random.uniform(0.2, 0.7))
+            self.means.append(np.random.uniform(-1, 1, 2))
+            self.spreads.append(np.random.uniform(0.1, 0.4))
         self.rewards = []
         self.actions = []
+        self.hvc_bg_array = []
+        self.bg_out = []
+        self.hvc_ra_array = []
+        self.ra_out = []
         self.dw_day_array = []
         
-    def get_reward(self, action):
-        return reward_fn(action)
+    def get_reward(self, coordinates):
+        reward_scape = gaussian(coordinates, 1, center, 0.5)
+        if N_DISTRACTORS == 0:
+            return reward_scape
+        hills = []
+        hills.append(reward_scape)
+        for i in range(N_DISTRACTORS):
+            height = self.heights[i]
+            mean = self.means[i]
+            spread = self.spreads[i]
+            hills.append(gaussian(coordinates, height, mean, spread))
+        return np.maximum.reduce(hills)
     
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc):
         for day in tqdm(range(DAYS)):
@@ -180,7 +186,7 @@ class Environment:
         # Plot trajectory
         x, y = np.linspace(-1, 1, 50), np.linspace(-1, 1, 50)
         X, Y = np.meshgrid(x, y)
-        Z = reward_fn([X, Y])
+        Z = self.get_reward([X, Y])
         # Create a colormap that goes from white to green
         cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'green'])
 
