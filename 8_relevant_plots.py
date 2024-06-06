@@ -14,6 +14,8 @@ def new_sigmoid(x, m=0, a=0):
 
 
 ''' Needs tuning to escape local max '''
+RANDOM_SEED = 42  # np.random.randint(100)
+np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
 # layer sizes
 HVC_SIZE = 100
@@ -229,7 +231,6 @@ class Environment:
         plt.ylabel('dW_day')
         plt.show()
         
-# np.random.seed(RANDOM_SEED)
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.plot_trajectory()
