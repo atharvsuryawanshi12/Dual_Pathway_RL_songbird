@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from tqdm import tqdm
-from scipy.optimize import minimize, Bounds
+from matplotlib.colors import LinearSegmentedColormap
+
 
 '''This model works!
 Full flegged 2D model with two pathways. 
@@ -13,23 +14,29 @@ def gaussian(coordinates, height, mean, spread):
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
 
-center = [-0.9, 0.9]
+SEED = 5 #np.random.randint(0, 100)
+
+center = np.random.uniform(-0.9, 0.9, 2)
 def landscape(coordinates):
     reward_scape = gaussian(coordinates, 1, center, 0.8)
-    np.random.seed(42)
-    for i in range(10):
-        height = np.random.uniform(0.1, 0.8)
+    # np.random.seed(SEED)
+    if N_DISTRACTORS == 0:
+        return reward_scape
+    hills = []
+    hills.append(reward_scape)
+    for i in range(N_DISTRACTORS):
+        height = np.random.uniform(0.2, 0.7)
         mean = np.random.uniform(-1, 1, 2)
-        spread = np.random.uniform(0.1, 0.6)
-        reward_scape += gaussian(coordinates, height, mean, spread)
-    return reward_scape
-
-def reward_fn(coordinates, max_reward):
-    return landscape(coordinates)/max_reward
+        spread = np.random.uniform(0.1, 0.4)
+        hills.append(gaussian(coordinates, height, mean, spread))
+    # return np.max(hills)
+    return np.maximum.reduce(hills)
 
 def new_sigmoid(x, m=0, a=0):
     """ Returns an output between -1 and 1 """
     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
+
+reward_fn = landscape
 
 # layer sizes
 HVC_SIZE = 100
@@ -54,17 +61,17 @@ input[1] = 1
 BG_noise = 0.1
 
 # Run paraneters
+N_DISTRACTORS = 10
 RANDOM_SEED = 42
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 1e-5
 TRIALS = 1000
-DAYS = 60
+DAYS = 40
 
 # modes
 ANNEALING = True
 HEBBIAN_LEARNING = True
 balance_factor = 1
-N = 1000
 
 # Model
 class NN:
@@ -112,16 +119,9 @@ class Environment:
         self.rewards = []
         self.actions = []
         self.dw_day_array = []
-        def neg_landscape(coordinates):
-            return -landscape(coordinates)
-        bounds = Bounds([-1, -1], [1, 1]) 
-        result = minimize(neg_landscape, np.zeros(2),method='Nelder-Mead', bounds=bounds)
-        self.max_reward = -result.fun
-        self.target = result.x
-        print(self.max_reward, self.target)
         
     def get_reward(self, action):
-        return reward_fn(action, self.max_reward)
+        return reward_fn(action)
     
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc):
         for day in tqdm(range(DAYS)):
@@ -149,9 +149,9 @@ class Environment:
                 self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
                 self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
                 dw_day = np.mean(np.abs(dw_hvc_bg))
-                # if iter % (TRIALS/10) == 0:    
+            if day % 6 == 0:   
                 #     tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}') 
-            # tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
+                tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
             # Annealing
             if ANNEALING:
                 ''' input daily sum, output scaling factor for potentiation'''
@@ -172,25 +172,26 @@ class Environment:
         fig, axs = plt.subplots(1, 2, figsize=(10, 5))
         # Plot rewards
         axs[0].plot(self.rewards)
-        # axs[0].set_ylim(0, 1)
+        axs[0].set_ylim(0, 1)
         axs[0].set_xlabel('Time')
         axs[0].set_ylabel('Reward')
         axs[0].set_title('Reward vs Iterations')
 
         # Plot trajectory
-        x, y = np.linspace(-2, 2, 50), np.linspace(-2, 2, 50)
+        x, y = np.linspace(-1, 1, 50), np.linspace(-1, 1, 50)
         X, Y = np.meshgrid(x, y)
-        Z = reward_fn([X, Y], self.max_reward)
-        contour = axs[1].contourf(X, Y, Z, levels=10)
+        Z = reward_fn([X, Y])
+        # Create a colormap that goes from white to green
+        cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'green'])
+
+
+        contour = axs[1].contourf(X, Y, Z, levels=10, cmap=cmap)
         fig.colorbar(contour, ax=axs[1], label='Reward')
         x_traj, y_traj = zip(*self.actions)
-        axs[1].plot(x_traj[::10], y_traj[::10], '-b', label='Agent Trajectory', lw = 0.5, alpha = 0.5) # Plot every 20th point for efficiency
+        axs[1].plot(x_traj[::10], y_traj[::10], '-r', label='Agent Trajectory', lw = 0.5, alpha = 0.5) # Plot every 20th point for efficiency
         axs[1].scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
         axs[1].scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point')
-        axs[1].scatter(center[0], center[1], s=20, c='g', marker='x', label='target') 
-        # Plot square
-        square = patches.Rectangle((-1, -1), 2, 2, linewidth=1, edgecolor='r', facecolor='none')
-        axs[1].add_patch(square)
+        axs[1].scatter(center[0], center[1], s=20, c='y', marker='x', label='target') 
         axs[1].set_title('Contour plot of reward function')
         axs[1].set_xlabel('x')
         axs[1].set_ylabel('y')
@@ -211,4 +212,5 @@ class Environment:
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input)
 env.plot_results_and_trajectory()
-env.plot_dw_day()
+if ANNEALING:
+    env.plot_dw_day()
