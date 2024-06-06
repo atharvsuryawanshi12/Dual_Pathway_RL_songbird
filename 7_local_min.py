@@ -7,7 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 '''This model works!
 Full flegged 2D model with two pathways. 
-Need to fine tune noise, learning rates and sigmoid slopes.'''
+Need to fine tune minimas, and has some issues with learning with seeds in reward function and etc.'''
 
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
