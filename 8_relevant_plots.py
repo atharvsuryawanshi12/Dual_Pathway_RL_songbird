@@ -1,6 +1,5 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-from matplotlib import patches
 from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -9,30 +8,13 @@ def gaussian(coordinates, height, mean, spread):
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
 
-SEED = 5 #np.random.randint(0, 100)
-# np.random.seed(SEED)
-
-center = np.random.uniform(-0.9, 0.9, 2)
-def reward_fn(coordinates):
-    reward_scape = gaussian(coordinates, 1, center, 0.5)
-    if N_DISTRACTORS == 0:
-        return reward_scape
-    hills = []
-    hills.append(reward_scape)
-    for i in range(N_DISTRACTORS):
-        height = np.random.uniform(0.2, 0.7)
-        mean = np.random.uniform(-1, 1, 2)
-        spread = np.random.uniform(0.1, 0.4)
-        hills.append(gaussian(coordinates, height, mean, spread))
-    # return np.max(hills)
-    return np.maximum.reduce(hills)
-
 def new_sigmoid(x, m=0, a=0):
     """ Returns an output between -1 and 1 """
     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
 
-# reward_fn = landscape
 
+''' Needs tuning to escape local max '''
+CENTER = np.random.uniform(-0.9, 0.9, 2)
 # layer sizes
 HVC_SIZE = 100
 BG_SIZE = 50
@@ -56,15 +38,15 @@ input[1] = 1
 BG_noise = 0.1
 
 # Run paraneters
+RANDOM_SEED = np.random.randint(0, 1000)
 N_DISTRACTORS = 10
-RANDOM_SEED = 42
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 1e-5
 TRIALS = 1000
 DAYS = 60
 
 # modes
-ANNEALING = True
+ANNEALING = False
 HEBBIAN_LEARNING = True
 balance_factor = 1
 
@@ -111,6 +93,13 @@ class Environment:
         self.ra_size = ra_size
         self.mc_size = mc_size
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
+        self.heights = []
+        self.means = []
+        self.spreads = []
+        for _ in range(N_DISTRACTORS):
+            self.heights.append(np.random.uniform(0.2, 0.7))
+            self.means.append(np.random.uniform(-1, 1, 2))
+            self.spreads.append(np.random.uniform(0.1, 0.4))
         self.rewards = []
         self.actions = []
         self.hvc_bg_array = []
@@ -119,10 +108,21 @@ class Environment:
         self.ra_out = []
         self.dw_day_array = []
         
-    def get_reward(self, action):
-        return reward_fn(action)
+    def get_reward(self, coordinates):
+        reward_scape = gaussian(coordinates, 1, CENTER, 0.5)
+        if N_DISTRACTORS == 0:
+            return reward_scape
+        hills = []
+        hills.append(reward_scape)
+        for i in range(N_DISTRACTORS):
+            height = self.heights[i]
+            mean = self.means[i]
+            spread = self.spreads[i]
+            hills.append(gaussian(coordinates, height, mean, spread))
+        # return np.max(hills)
+        return np.maximum.reduce(hills)
     
-    def run(self, iterations, learning_rate, learning_rate_hl, input_hvc):
+    def run(self, iterations, learning_rate, learning_rate_hl, input_hvc, annealing = False):
         for day in tqdm(range(DAYS)):
             dw_day = 0
             for iter in range(iterations):
@@ -152,11 +152,11 @@ class Environment:
                 self.bg_out.append(bg[1])
                 self.hvc_ra_array.append(self.model.W_hvc_ra[1,1])
                 self.ra_out.append(ra[1])
-            if day % 6 == 0:   
+            # if day % 6 == 0:   
                 #     tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}') 
-                tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
+                # tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
             # Annealing
-            if ANNEALING:
+            if annealing:
                 ''' input daily sum, output scaling factor for potentiation'''
                 p = dw_day
                 # self.dw_day_array.append(p)
@@ -174,7 +174,7 @@ class Environment:
         # generate grid 
         x, y = np.linspace(-1, 1, 50), np.linspace(-1, 1, 50)
         X, Y = np.meshgrid(x, y)
-        Z = reward_fn([X, Y])
+        Z = self.get_reward([X, Y])
         
         # Plot contour
         cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'green'])
@@ -186,7 +186,7 @@ class Environment:
         axs.plot(x_traj[::10], y_traj[::10], 'r', label='Agent Trajectory', alpha = 0.5, linewidth = 0.5) # Plot every 20th point for efficiency
         axs.scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
         axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
-        axs.scatter(center[0], center[1], s=20, c='y', marker='x', label='target')  # type: ignore
+        axs.scatter(CENTER[0], CENTER[1], s=20, c='y', marker='x', label='target')  # type: ignore
         # labels
         axs.set_title('Contour plot of reward function')
         axs.set_xlabel('x')
@@ -210,8 +210,8 @@ class Environment:
         axs[3].set_ylim(-1, 1)
         axs[3].set_ylabel('HVC RA weights')
         axs[4].plot(self.actions)
-        axs[4].plot(center[0]*np.ones(TRIALS*DAYS))
-        axs[4].plot(center[1]*np.ones(TRIALS*DAYS))
+        axs[4].plot(CENTER[0]*np.ones(TRIALS*DAYS))
+        axs[4].plot(CENTER[1]*np.ones(TRIALS*DAYS))
         axs[4].legend(['x target', 'y target'])
         axs[4].set_ylabel('Motor Output')
         axs[4].set_ylim(-1, 1)
@@ -229,8 +229,8 @@ class Environment:
         plt.ylabel('dW_day')
         plt.show()
         
-np.random.seed(RANDOM_SEED)
+# np.random.seed(RANDOM_SEED)
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
-env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input)
+env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.plot_trajectory()
 env.plot_results()
