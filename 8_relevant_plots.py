@@ -170,8 +170,7 @@ class Environment:
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it normal 
                 dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20
                 self.model.W_hvc_bg += dw_night
-                self.model.W_hvc_bg = np.abs(self.model.W_hvc_bg)   # either this or clip
-                # self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
             
                 
     def plot_trajectory(self):
