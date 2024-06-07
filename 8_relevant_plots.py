@@ -5,6 +5,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
+    ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
 
@@ -12,9 +13,13 @@ def new_sigmoid(x, m=0, a=0):
     """ Returns an output between -1 and 1 """
     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
 
+def sigmoid(x, m =0.0 , a=0.0 ):
+    """ Returns an output between 0 and 1 """
+    return 1 / (1 + np.exp(-1*(x-a)*m))
+
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = 42  # np.random.randint(100)
+RANDOM_SEED = 42 #np.random.randint(0, 1000)
 np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
 # layer sizes
@@ -40,15 +45,15 @@ input[1] = 1
 BG_noise = 0.1
 
 # Run paraneters
-RANDOM_SEED = np.random.randint(0, 1000)
+
 N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1e-5
+LEARNING_RATE_HL = 1.2e-5
 TRIALS = 1000
 DAYS = 60
 
 # modes
-ANNEALING = False
+ANNEALING = True
 HEBBIAN_LEARNING = True
 balance_factor = 1
 
@@ -95,13 +100,9 @@ class Environment:
         self.ra_size = ra_size
         self.mc_size = mc_size
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
-        self.heights = []
-        self.means = []
-        self.spreads = []
-        for _ in range(N_DISTRACTORS):
-            self.heights.append(np.random.uniform(0.2, 0.7))
-            self.means.append(np.random.uniform(-1, 1, 2))
-            self.spreads.append(np.random.uniform(0.1, 0.4))
+        self.heights = np.random.uniform(0.2, 0.7, N_DISTRACTORS)
+        self.means = np.random.uniform(-1, 1, (N_DISTRACTORS, 2))
+        self.spreads = np.random.uniform(0.1, 0.4, N_DISTRACTORS)
         self.rewards = []
         self.actions = []
         self.hvc_bg_array = []
@@ -109,6 +110,7 @@ class Environment:
         self.hvc_ra_array = []
         self.ra_out = []
         self.dw_day_array = []
+        self.pot_array = []
         
     def get_reward(self, coordinates):
         reward_scape = gaussian(coordinates, 1, CENTER, 0.5)
@@ -121,7 +123,6 @@ class Environment:
             mean = self.means[i]
             spread = self.spreads[i]
             hills.append(gaussian(coordinates, height, mean, spread))
-        # return np.max(hills)
         return np.maximum.reduce(hills)
     
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc, annealing = False):
@@ -148,7 +149,7 @@ class Environment:
                 # bound weights between +-1
                 self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
                 self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
-                dw_day = np.mean(np.abs(dw_hvc_bg))
+                dw_day += np.mean(np.abs(dw_hvc_bg))
                 
                 self.hvc_bg_array.append(self.model.W_hvc_bg[1,1])
                 self.bg_out.append(bg[1])
@@ -160,15 +161,17 @@ class Environment:
             # Annealing
             if annealing:
                 ''' input daily sum, output scaling factor for potentiation'''
-                p = dw_day
-                # self.dw_day_array.append(p)
-                p = new_sigmoid(p, m = 1, a = 0)
+                p = dw_day*100
+                self.dw_day_array.append(p)
+                p = 1* sigmoid(p, m = 2.5, a = 3)
                 potentiation_factor = np.zeros((self.hvc_size))
+                self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it normal 
-                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10
+                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20
                 self.model.W_hvc_bg += dw_night
-                self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                self.model.W_hvc_bg = np.abs(self.model.W_hvc_bg)   # either this or clip
+                # self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
             
                 
     def plot_trajectory(self):
@@ -225,13 +228,20 @@ class Environment:
         plt.show()
     
     def plot_dw_day(self):
+        # Expand dw_day_array and pot_array to match the size of rewards
+        expanded_dw_day_array = np.repeat(self.dw_day_array, len(self.rewards) // len(self.dw_day_array))
+        expanded_pot_array = np.repeat(self.pot_array, len(self.rewards) // len(self.pot_array))
         plt.title('Annealing')
-        plt.plot(self.dw_day_array)
+        plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
+        plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
+        plt.plot(self.rewards, '.', markersize=1, label='Reward')
         plt.xlabel('Days')
         plt.ylabel('dW_day')
+        plt.legend()
         plt.show()
         
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.plot_trajectory()
 env.plot_results()
+env.plot_dw_day()
