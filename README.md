@@ -27,3 +27,6 @@ This is a directory to store checkpoint codes and other info.
 ![](images/20240607102701.png)
 - This solved the issue and made the X and Y independent as shown in the figure below. 
 ![](images/20240607102834.png)
+### 5 Dual Pathway 2D model 
+- Now I implemented the Hebbian learning pathway to the previous model i.e. adding a connection between HVC and RA. 
+- This adds the robustness to the model as we expect in a song of a songbird. 
