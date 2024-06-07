@@ -22,8 +22,8 @@ This is a directory to store checkpoint codes and other info.
 ### 4 Single pathway 2D 3 layer
 - Now adding one more layer i.e. RA layer to the model caused issues such as dependence between x and y output coordinates.
 - A scatter plot of this output looked biased in a direction leading to improper learning. The cluster plot of this output is shown below. 
-!()[20240607101712.png]
+![](images/20240607101712.png)
 - In order to overcome this issue, I had to channelized BG, RA such that X and Y motor outputs have no dependence shared between them. The following diagram gives a good idea of the structure of the model. 
-!()[20240607102701.png]
+![](images/20240607102701.png)
 - This solved the issue and made the X and Y independent as shown in the figure below. 
-!()[20240607102834.png]
+![](images/20240607102834.png)
