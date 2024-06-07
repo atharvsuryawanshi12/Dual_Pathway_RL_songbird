@@ -9,7 +9,7 @@ This is a directory to store checkpoint codes and other info.
 ### 1 Single Pathway 1D
 - 1D continuous space RL model which is biologically plausible as it works on the basis of reward modulated Hebbian learning. 
 - It has 4 components: HVC, BG, RA. MC as shown below
-![[Pasted image 20240607095346.png]]
+![[images/Pasted image 20240607095346.png]]
 
 ### 2 Dual Pathway 1D
 - In this code, we make an extra connection between HVC and RA as shown below. This connection learns using plain Hebbian learning. 
