@@ -36,8 +36,10 @@ This is a directory to store checkpoint codes and other info.
 Should be more than influence of direct hebbian learning
 #### Tuning of Sigmoidal slopes
 - we tune the slopes such that the sigmoid(input) should have a good enough range from -1 to 1 without a skew towards the borders.
-- We find the slopes of BG_sigmoid to be 2.5 as shown below. 
+- We find the slopes of BG_sigmoid to be 2.5 as shown below.
+
 ![](images/Pasted%20image%2020240612170025.png) 
 
 - Similarly we tune RA slope. Now RA is known to be a bursting kind of neuron, thus a skew in output of RA is physiologically relevant, but we also need to make sure output of MC neuron is not skewed despite of skewed inputs from RA. This is done using the slope of RA sigmoid as 18.
+
 ![](images/Pasted%20image%2020240612165926.png) 
