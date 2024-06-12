@@ -30,3 +30,14 @@ This is a directory to store checkpoint codes and other info.
 ### 5 Dual Pathway 2D model 
 - Now I implemented the Hebbian learning pathway to the previous model i.e. adding a connection between HVC and RA. 
 - This adds the robustness to the model as we expect in a song of a songbird. 
+
+### 9 Tuning
+#### Influence of BG
+Should be more than influence of direct hebbian learning
+#### Tuning of Sigmoidal slopes
+- we tune the slopes such that the sigmoid(input) should have a good enough range from -1 to 1 without a skew towards the borders.
+- We find the slopes of BG_sigmoid to be 2.5 as shown below. 
+![](Pasted%20image%2020240612170025.png) 
+
+- Similarly we tune RA slope. Now RA is known to be a bursting kind of neuron, thus a skew in output of RA is physiologically relevant, but we also need to make sure output of MC neuron is not skewed despite of skewed inputs from RA. This is done using the slope of RA sigmoid as 18.
+![](Pasted%20image%2020240612165926.png) 
