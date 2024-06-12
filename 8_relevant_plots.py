@@ -46,9 +46,9 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 10
+N_DISTRACTORS = 5
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1.2e-5
+LEARNING_RATE_HL = 1.1e-5
 TRIALS = 1000
 DAYS = 60
 
@@ -167,10 +167,11 @@ class Environment:
                 potentiation_factor = np.zeros((self.hvc_size))
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
-                night_noise = np.random.uniform(-1, 1, self.bg_size) # make it normal 
+                night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
                 dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20
                 self.model.W_hvc_bg += dw_night
-                self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                self.model.W_hvc_bg = (self.model.W_hvc_bg+1) % 2 -1 
+                # self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
             
                 
     def plot_trajectory(self):
@@ -243,4 +244,4 @@ env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.plot_trajectory()
 env.plot_results()
-env.plot_dw_day()
+# env.plot_dw_day()
