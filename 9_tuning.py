@@ -1,7 +1,6 @@
 # Following changes more than code 8
-# change in balance factor to 2
-
-
+# change in balance factor to 2; note the location of balance factor in code is changed
+# Tuning of sigmoid slopes, refer README.md for details. BG_sig_slope = 2.5, RA_sig_slope = 18 and sigmoid for MC is removed
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -14,7 +13,7 @@ def gaussian(coordinates, height, mean, spread):
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
 
-def new_sigmoid(x, m=0, a=0):
+def new_sigmoid(x, m=0.0, a=0.0):
     """ Returns an output between -1 and 1 """
     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
 
@@ -25,7 +24,7 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 ''' Needs tuning to escape local max '''
 RANDOM_SEED = 42 #np.random.randint(0, 1000)
-np.random.seed(RANDOM_SEED)
+# np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
 # layer sizes
 HVC_SIZE = 100
@@ -36,11 +35,11 @@ N_RA_CLUSTERS = 2
 N_BG_CLUSTERS = 2
 
 # sigmoid layer parameters
-BG_sig_slope = 1  # 1 lesser, slower the learning # BG sigmoidal should be as less steep as possible
+BG_sig_slope = 2.5  # 1 lesser, slower the learning # BG sigmoidal should be as less steep as possible
 BG_sig_mid = 0
-RA_sig_slope = 30 # 30 RA sigmoidal should be as steep as possible
+RA_sig_slope = 18 # 30 RA sigmoidal should be as steep as possible
 RA_sig_mid = 0
-MC_sig_slope = 5 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
+MC_sig_slope = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
 MC_sig_mid = 0
 
 # parameters
@@ -92,10 +91,10 @@ class NN:
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_noise, self.bg_size), m = BG_sig_slope, a = BG_sig_mid)
         self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor  + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_sig_slope, a = RA_sig_mid) 
         ''' even after BG cut off, output should remain still the same'''
-        self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_sig_slope, a = MC_sig_mid)
+        # self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_sig_slope, a = MC_sig_mid)
         # self.bg = np.dot(hvc_array/num_ones, self.W_hvc_bg)  #outputs to +-0.98
         # self.ra = np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor  + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING #outputs to +-0.40
-        # self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
+        self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         return self.mc, self.ra, self.bg
 
 class Environment:
