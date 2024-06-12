@@ -23,8 +23,9 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = 42 #np.random.randint(0, 1000)
-# np.random.seed(RANDOM_SEED)
+RANDOM_SEED = np.random.randint(0, 1000)
+print(f'Random seed is {RANDOM_SEED}')
+np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
 # layer sizes
 HVC_SIZE = 100
@@ -35,12 +36,13 @@ N_RA_CLUSTERS = 2
 N_BG_CLUSTERS = 2
 
 # sigmoid layer parameters
-BG_sig_slope = 2.5  # 1 lesser, slower the learning # BG sigmoidal should be as less steep as possible
+BG_sig_slope = 2.5  # uniform output 
 BG_sig_mid = 0
-RA_sig_slope = 18 # 30 RA sigmoidal should be as steep as possible
+RA_sig_slope = 18 # most steep such that MC output is not skewed
 RA_sig_mid = 0
-MC_sig_slope = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
-MC_sig_mid = 0
+# Sigmoid on MC is removed
+# MC_sig_slope = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
+# MC_sig_mid = 0
 
 # parameters
 reward_window = 10
@@ -52,12 +54,14 @@ BG_noise = 0.1
 
 N_DISTRACTORS = 5
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1.1e-5
+LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
 TRIALS = 1000
 DAYS = 60
 
 # modes
 ANNEALING = True
+ANNEALING_SLOPE = 2.5
+ANNEALING_MID = 3
 HEBBIAN_LEARNING = True
 balance_factor = 2
 
@@ -165,9 +169,9 @@ class Environment:
             # Annealing
             if annealing:
                 ''' input daily sum, output scaling factor for potentiation'''
-                p = dw_day*100
+                p = dw_day*25
                 self.dw_day_array.append(p)
-                p = 1* sigmoid(p, m = 2.5, a = 3)
+                p = 1* sigmoid(4*p, m = ANNEALING_SLOPE, a = ANNEALING_MID)
                 potentiation_factor = np.zeros((self.hvc_size))
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
@@ -232,20 +236,30 @@ class Environment:
         plt.show()
     
     def plot_dw_day(self):
-        # Expand dw_day_array and pot_array to match the size of rewards
-        expanded_dw_day_array = np.repeat(self.dw_day_array, len(self.rewards) // len(self.dw_day_array))
-        expanded_pot_array = np.repeat(self.pot_array, len(self.rewards) // len(self.pot_array))
-        plt.title('Annealing')
-        plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
-        plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
-        plt.plot(self.rewards, '.', markersize=1, label='Reward')
-        plt.xlabel('Days')
-        plt.ylabel('dW_day')
-        plt.legend()
-        plt.show()
+        if ANNEALING:
+            # Expand dw_day_array and pot_array to match the size of rewards
+            expanded_dw_day_array = np.repeat(self.dw_day_array, len(self.rewards) // len(self.dw_day_array))
+            expanded_pot_array = np.repeat(self.pot_array, len(self.rewards) // len(self.pot_array))
+            plt.title('Annealing')
+            plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
+            plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
+            plt.plot(self.rewards, '.', markersize=1, label='Reward')
+            plt.xlabel('Days')
+            plt.ylabel('dW_day')
+            plt.legend()
+            plt.show()
         
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.plot_trajectory()
 env.plot_results()
-# env.plot_dw_day()
+env.plot_dw_day()
+
+def build_and_run(seed, annealing, plot):
+    np.random.seed(seed)
+    env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
+    env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, annealing)
+    if np.mean(env.rewards[-reward_window:]) > 0.8:
+        return 1
+    else: 
+        return 0
