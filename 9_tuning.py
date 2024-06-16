@@ -1,11 +1,17 @@
 # Following changes more than code 8
 # change in balance factor to 2; note the location of balance factor in code is changed
 # Tuning of sigmoid slopes, refer README.md for details. BG_sig_slope = 2.5, RA_sig_slope = 18 and sigmoid for MC is removed
+# annealing is cyclical  
+# saving plots in a folder
 
+import os
 import numpy as np 
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
+
+# save plots in a folder
+save_dir = 'plots'
 
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
@@ -23,7 +29,7 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = np.random.randint(0, 1000)
+RANDOM_SEED = 84 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
@@ -52,7 +58,7 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 5
+N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
 TRIALS = 1000
@@ -61,7 +67,7 @@ DAYS = 60
 # modes
 ANNEALING = True
 ANNEALING_SLOPE = 2.5
-ANNEALING_MID = 3
+ANNEALING_MID = 4
 HEBBIAN_LEARNING = True
 balance_factor = 2
 
@@ -121,7 +127,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, CENTER, 0.5)
+        reward_scape = gaussian(coordinates, 1, CENTER, 0.4)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
@@ -169,17 +175,16 @@ class Environment:
             # Annealing
             if annealing:
                 ''' input daily sum, output scaling factor for potentiation'''
-                p = dw_day*25
+                p = dw_day*100
                 self.dw_day_array.append(p)
-                p = 1* sigmoid(4*p, m = ANNEALING_SLOPE, a = ANNEALING_MID)
+                p = 1* sigmoid(1*p, m = ANNEALING_SLOPE, a = ANNEALING_MID)
                 potentiation_factor = np.zeros((self.hvc_size))
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
                 dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20
                 self.model.W_hvc_bg += dw_night
-                self.model.W_hvc_bg = (self.model.W_hvc_bg+1) % 2 -1 
-                # self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
             
                 
     def plot_trajectory(self):
@@ -248,12 +253,104 @@ class Environment:
             plt.ylabel('dW_day')
             plt.legend()
             plt.show()
+            
+    def save_trajectory(self):
+        fig, axs = plt.subplots(figsize=(10, 9))
+        # generate grid 
+        x, y = np.linspace(-1, 1, 50), np.linspace(-1, 1, 50)
+        X, Y = np.meshgrid(x, y)
+        Z = self.get_reward([X, Y])
         
+        # Plot contour
+        cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'green'])
+        contour = axs.contourf(X, Y, Z, levels=10, cmap=cmap)
+        fig.colorbar(contour, ax=axs, label='Reward')
+        
+        # plot trajectory
+        x_traj, y_traj = zip(*self.actions)
+        axs.plot(x_traj[::10], y_traj[::10], 'r', label='Agent Trajectory', alpha = 0.5, linewidth = 0.5) # Plot every 20th point for efficiency
+        axs.scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
+        axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
+        axs.scatter(CENTER[0], CENTER[1], s=20, c='y', marker='x', label='target')  # type: ignore
+        # labels
+        axs.set_title('Contour plot of reward function')
+        axs.set_xlabel('x')
+        axs.set_ylabel('y')
+        axs.legend()
+        plt.tight_layout()
+        # Create the "plots" directory if it doesn't exist
+        os.makedirs(save_dir, exist_ok = True)
+        # Clear previous plots (optional):
+        for filename in os.listdir(save_dir):
+            if filename.startswith("trajectory") and filename.endswith(".png") or filename.endswith(".jpg"):
+                os.remove(os.path.join(save_dir, filename))
+        # Save the plot
+        plt.savefig(os.path.join(save_dir, f"trajectory_{RANDOM_SEED}.png"))
+        plt.close()  # Close the plot to avoid memory leaks
+        
+    def save_results(self):
+        fig, axs = plt.subplots(6, 1, figsize=(10, 15))
+        axs[0].plot(self.rewards, '.', markersize=1, linestyle='None')
+        axs[0].set_ylim(0, 1)
+        axs[0].set_ylabel('Reward')
+        axs[1].plot(self.hvc_bg_array)
+        axs[1].set_ylim(-1, 1)
+        axs[1].set_ylabel('HVC BG weights')
+        axs[2].plot(self.bg_out,'.', markersize=0.5, linestyle='None')
+        axs[2].set_ylim(-1, 1)
+        axs[2].set_ylabel('BG output')
+        axs[3].plot(self.hvc_ra_array)
+        axs[3].set_ylim(-1, 1)
+        axs[3].set_ylabel('HVC RA weights')
+        axs[4].plot(self.actions)
+        axs[4].plot(CENTER[0]*np.ones(TRIALS*DAYS))
+        axs[4].plot(CENTER[1]*np.ones(TRIALS*DAYS))
+        axs[4].legend(['x target', 'y target'])
+        axs[4].set_ylabel('Motor Output')
+        axs[4].set_ylim(-1, 1)
+        axs[5].plot(self.ra_out)
+        axs[5].set_ylim(-1, 1)
+        axs[5].set_ylabel('RA activity')
+        fig.suptitle('Results', fontsize=20)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        # Create the "plots" directory if it doesn't exist
+        os.makedirs(save_dir, exist_ok = True)
+        # Clear previous plots (optional):
+        for filename in os.listdir(save_dir):
+            if filename.startswith("results") and filename.endswith(".png") or filename.endswith(".jpg"):
+                os.remove(os.path.join(save_dir, filename))
+        # Save the plot
+        plt.savefig(os.path.join(save_dir, f"results_{RANDOM_SEED}.png"))
+        plt.close()  # Close the plot to avoid memory leaks
+        
+    
+    def save_dw_day(self):
+        if ANNEALING:
+            # Expand dw_day_array and pot_array to match the size of rewards
+            expanded_dw_day_array = np.repeat(self.dw_day_array, len(self.rewards) // len(self.dw_day_array))
+            expanded_pot_array = np.repeat(self.pot_array, len(self.rewards) // len(self.pot_array))
+            plt.title('Annealing')
+            plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
+            plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
+            plt.plot(self.rewards, '.', markersize=1, label='Reward', alpha = 0.1)
+            plt.xlabel('Days')
+            plt.ylabel('dW_day')
+            plt.legend()
+            # Create the "plots" directory if it doesn't exist
+            os.makedirs(save_dir, exist_ok = True)
+            # Clear previous plots (optional):
+            for filename in os.listdir(save_dir):
+                if filename.startswith("dw") and filename.endswith(".png") or filename.endswith(".jpg"):
+                    os.remove(os.path.join(save_dir, filename))
+            # Save the plot
+            plt.savefig(os.path.join(save_dir, f"dw_{RANDOM_SEED}.png"))
+            plt.close()  # Close the plot to avoid memory leaks
+            
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
-env.plot_trajectory()
-env.plot_results()
-env.plot_dw_day()
+env.save_trajectory()
+env.save_results()
+env.save_dw_day()
 
 def build_and_run(seed, annealing, plot):
     np.random.seed(seed)
@@ -261,5 +358,5 @@ def build_and_run(seed, annealing, plot):
     env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, annealing)
     if np.mean(env.rewards[-reward_window:]) > 0.8:
         return 1
-    else: 
+    else:
         return 0
