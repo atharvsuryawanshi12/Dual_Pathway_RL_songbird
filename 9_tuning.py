@@ -30,7 +30,7 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = 73 #np.random.randint(0, 1000)
+RANDOM_SEED = 78 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
@@ -59,7 +59,7 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 20
+N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 TRIALS = 1000
@@ -67,8 +67,8 @@ DAYS = 61
 
 # modes
 ANNEALING = True
-ANNEALING_SLOPE = 1 # 1 works
-ANNEALING_MID = 2 # 3 works
+ANNEALING_SLOPE = 4 # 4
+ANNEALING_MID = 2 # 2 works
 HEBBIAN_LEARNING = True
 balance_factor = 2
 BG_influence = True
@@ -119,7 +119,7 @@ class Environment:
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
         self.heights = np.random.uniform(0.2, 0.7, N_DISTRACTORS)
         self.means = np.random.uniform(-1, 1, (N_DISTRACTORS, 2))
-        self.spreads = np.random.uniform(0.1, 0.4, N_DISTRACTORS)
+        self.spreads = np.random.uniform(0.1, 0.6, N_DISTRACTORS)
         self.rewards = []
         self.actions = []
         self.hvc_bg_array = []
@@ -130,7 +130,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, CENTER, 0.6)
+        reward_scape = gaussian(coordinates, 1, CENTER, 0.3)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
