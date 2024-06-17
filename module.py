@@ -57,16 +57,16 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 20
+N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
+LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 TRIALS = 1000
 DAYS = 61
 
 # modes
 ANNEALING = True
-ANNEALING_SLOPE = 1
-ANNEALING_MID = 3
+ANNEALING_SLOPE = 4 
+ANNEALING_MID = 2
 HEBBIAN_LEARNING = True
 balance_factor = 2
 BG_influence = True
@@ -119,7 +119,7 @@ class Environment:
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
         self.heights = np.random.uniform(0.2, 0.7, N_DISTRACTORS)
         self.means = np.random.uniform(-1, 1, (N_DISTRACTORS, 2))
-        self.spreads = np.random.uniform(0.1, 0.4, N_DISTRACTORS)
+        self.spreads = np.random.uniform(0.1, 0.6, N_DISTRACTORS)
         self.rewards = []
         self.actions = []
         self.hvc_bg_array = []
@@ -130,7 +130,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, self.center, 0.6)
+        reward_scape = gaussian(coordinates, 1, self.center, 0.3)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
@@ -188,7 +188,7 @@ class Environment:
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
-                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20*self.model.bg_influence
+                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
                 self.model.W_hvc_bg += dw_night
                 self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
             
@@ -359,11 +359,9 @@ def build_and_run(seed, annealing, plot):
     center = np.random.uniform(-0.9, 0.9, 2)
     env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE, center, seed)
     env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, annealing)
-    env.save_results()
-    env.save_trajectory()
-    if annealing:
-        env.save_dw_day()
-    if env.reward_baseline > 0.8:
-        return 1
-    else: 
-        return 0
+    if plot:
+        env.save_trajectory()
+        env.save_results()
+        if annealing:
+            env.save_dw_day()
+    return np.mean(env.rewards[-100:])
