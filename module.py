@@ -1,6 +1,8 @@
 # Following changes more than code 9
 # added center of reward landscape directly to the environment as parameter
 # direct adding of seed to the environment
+# changing the spread of the main gaussian 
+# changing the number of distractors
 '''Works as a module for the main script'''
 
 import os
@@ -55,7 +57,7 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 10
+N_DISTRACTORS = 20
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
 TRIALS = 1000
@@ -126,7 +128,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, self.center, 0.4)
+        reward_scape = gaussian(coordinates, 1, self.center, 0.6)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
@@ -153,6 +155,7 @@ class Environment:
                     reward_baseline = 0
                 else:
                     reward_baseline = np.mean(self.rewards[-reward_window:-1])
+                    self.reward_baseline = reward_baseline
                 # Updates 
                 # RL update
                 dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg # RL update
@@ -170,7 +173,6 @@ class Environment:
                 self.hvc_ra_array.append(self.model.W_hvc_ra[1,1])
                 self.ra_out.append(ra[1])
             # if day % 6 == 0:   
-                #     tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}') 
                 # tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
             # Annealing
             if annealing:
@@ -357,7 +359,7 @@ def build_and_run(seed, annealing, plot):
     env.save_trajectory()
     if annealing:
         env.save_dw_day()
-    if np.mean(env.rewards[-reward_window:]) > 0.8:
+    if env.reward_baseline > 0.8:
         return 1
     else: 
         return 0
