@@ -30,7 +30,7 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = 74 #np.random.randint(0, 1000)
+RANDOM_SEED = 73 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
@@ -61,7 +61,7 @@ BG_noise = 0.1
 
 N_DISTRACTORS = 20
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 2.3e-5 # small increase compared to CODE_8
+LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 TRIALS = 1000
 DAYS = 61
 
@@ -187,7 +187,7 @@ class Environment:
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
-                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20*self.model.bg_influence
+                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
                 self.model.W_hvc_bg += dw_night
                 self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
             
