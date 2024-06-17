@@ -3,6 +3,7 @@
 # Tuning of sigmoid slopes, refer README.md for details. BG_sig_slope = 2.5, RA_sig_slope = 18 and sigmoid for MC is removed
 # annealing is cyclical  
 # saving plots in a folder
+# inclusion of BG_influence in the model and turning it off after 60 days
 
 import os
 import numpy as np 
@@ -29,7 +30,7 @@ def sigmoid(x, m =0.0 , a=0.0 ):
 
 
 ''' Needs tuning to escape local max '''
-RANDOM_SEED = 84 #np.random.randint(0, 1000)
+RANDOM_SEED = 74 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
 CENTER = np.random.uniform(-0.9, 0.9, 2)
@@ -58,18 +59,19 @@ BG_noise = 0.1
 
 # Run paraneters
 
-N_DISTRACTORS = 10
+N_DISTRACTORS = 20
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
+LEARNING_RATE_HL = 2.3e-5 # small increase compared to CODE_8
 TRIALS = 1000
-DAYS = 60
+DAYS = 61
 
 # modes
 ANNEALING = True
-ANNEALING_SLOPE = 2.5
-ANNEALING_MID = 4
+ANNEALING_SLOPE = 1 # 1 works
+ANNEALING_MID = 2 # 3 works
 HEBBIAN_LEARNING = True
 balance_factor = 2
+BG_influence = True
 
 # Model
 class NN:
@@ -93,13 +95,14 @@ class NN:
         self.mc_size = mc_size  
         self.ra_cluster_size = ra_size // N_RA_CLUSTERS
         self.bg_cluster_size = bg_size // N_BG_CLUSTERS
+        self.bg_influence = BG_influence
             
     def forward(self, hvc_array):
         self.hvc = hvc_array
         # count number of 1 in hvc, divide bg by that number
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_noise, self.bg_size), m = BG_sig_slope, a = BG_sig_mid)
-        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor  + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_sig_slope, a = RA_sig_mid) 
+        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_sig_slope, a = RA_sig_mid) 
         ''' even after BG cut off, output should remain still the same'''
         # self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_sig_slope, a = MC_sig_mid)
         # self.bg = np.dot(hvc_array/num_ones, self.W_hvc_bg)  #outputs to +-0.98
@@ -127,7 +130,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, CENTER, 0.4)
+        reward_scape = gaussian(coordinates, 1, CENTER, 0.6)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
@@ -142,6 +145,8 @@ class Environment:
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc, annealing = False):
         for day in tqdm(range(DAYS)):
             dw_day = 0
+            if day >= 60:
+                self.model.bg_influence = False
             for iter in range(iterations):
                 # reward and baseline
                 action, ra, bg = self.model.forward(input_hvc)
@@ -155,7 +160,7 @@ class Environment:
                     reward_baseline = np.mean(self.rewards[-reward_window:-1])
                 # Updates 
                 # RL update
-                dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg # RL update
+                dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg * self.model.bg_influence # RL update
                 self.model.W_hvc_bg += dw_hvc_bg
                 # HL update
                 dw_hvc_ra = learning_rate_hl*input_hvc.reshape(self.hvc_size,1)*self.model.ra*HEBBIAN_LEARNING # lr is supposed to be much smaller here
@@ -182,7 +187,7 @@ class Environment:
                 self.pot_array.append(1-p)
                 potentiation_factor[1] = 1-p 
                 night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
-                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20
+                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*20*self.model.bg_influence
                 self.model.W_hvc_bg += dw_night
                 self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
             
