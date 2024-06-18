@@ -12,7 +12,7 @@ from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
 
 # save plots in a folder
-save_dir = 'plots'
+save_dir = "plots"
 
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
@@ -68,7 +68,7 @@ DAYS = 61
 # modes
 ANNEALING = True
 ANNEALING_SLOPE = 4 # 4
-ANNEALING_MID = 2 # 2 works
+ANNEALING_MID = 2 # 2 
 HEBBIAN_LEARNING = True
 balance_factor = 2
 BG_influence = True
@@ -111,11 +111,13 @@ class NN:
         return self.mc, self.ra, self.bg
 
 class Environment:
-    def __init__(self, hvc_size, bg_size, ra_size, mc_size):
+    def __init__(self, hvc_size, bg_size, ra_size, mc_size, center, seed):
         self.hvc_size = hvc_size
         self.bg_size = bg_size
         self.ra_size = ra_size
         self.mc_size = mc_size
+        self.center = center
+        self.seed = seed
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
         self.heights = np.random.uniform(0.2, 0.7, N_DISTRACTORS)
         self.means = np.random.uniform(-1, 1, (N_DISTRACTORS, 2))
@@ -130,7 +132,7 @@ class Environment:
         self.pot_array = []
         
     def get_reward(self, coordinates):
-        reward_scape = gaussian(coordinates, 1, CENTER, 0.3)
+        reward_scape = gaussian(coordinates, 1, self.center, 0.3)
         if N_DISTRACTORS == 0:
             return reward_scape
         hills = []
@@ -143,6 +145,7 @@ class Environment:
         return np.maximum.reduce(hills)
     
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc, annealing = False):
+        self.annealing = annealing
         for day in tqdm(range(DAYS)):
             dw_day = 0
             if day >= 60:
@@ -175,7 +178,6 @@ class Environment:
                 self.hvc_ra_array.append(self.model.W_hvc_ra[1,1])
                 self.ra_out.append(ra[1])
             # if day % 6 == 0:   
-                #     tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}') 
                 # tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
             # Annealing
             if annealing:
@@ -233,8 +235,8 @@ class Environment:
         axs[3].set_ylim(-1, 1)
         axs[3].set_ylabel('HVC RA weights')
         axs[4].plot(self.actions)
-        axs[4].plot(CENTER[0]*np.ones(TRIALS*DAYS))
-        axs[4].plot(CENTER[1]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.center[0]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.center[1]*np.ones(TRIALS*DAYS))
         axs[4].legend(['x target', 'y target'])
         axs[4].set_ylabel('Motor Output')
         axs[4].set_ylim(-1, 1)
@@ -258,7 +260,7 @@ class Environment:
             plt.ylabel('dW_day')
             plt.legend()
             plt.show()
-            
+        
     def save_trajectory(self):
         fig, axs = plt.subplots(figsize=(10, 9))
         # generate grid 
@@ -276,7 +278,7 @@ class Environment:
         axs.plot(x_traj[::10], y_traj[::10], 'r', label='Agent Trajectory', alpha = 0.5, linewidth = 0.5) # Plot every 20th point for efficiency
         axs.scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
         axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
-        axs.scatter(CENTER[0], CENTER[1], s=20, c='y', marker='x', label='target')  # type: ignore
+        axs.scatter(self.center[0], self.center[1], s=20, c='y', marker='x', label='target')  # type: ignore
         # labels
         axs.set_title('Contour plot of reward function')
         axs.set_xlabel('x')
@@ -308,8 +310,8 @@ class Environment:
         axs[3].set_ylim(-1, 1)
         axs[3].set_ylabel('HVC RA weights')
         axs[4].plot(self.actions)
-        axs[4].plot(CENTER[0]*np.ones(TRIALS*DAYS))
-        axs[4].plot(CENTER[1]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.center[0]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.center[1]*np.ones(TRIALS*DAYS))
         axs[4].legend(['x target', 'y target'])
         axs[4].set_ylabel('Motor Output')
         axs[4].set_ylim(-1, 1)
@@ -351,17 +353,21 @@ class Environment:
             plt.savefig(os.path.join(save_dir, f"dw_{RANDOM_SEED}.png"))
             plt.close()  # Close the plot to avoid memory leaks
             
-env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
+env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE, CENTER, RANDOM_SEED)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, ANNEALING)
 env.save_trajectory()
 env.save_results()
 env.save_dw_day()
 
 def build_and_run(seed, annealing, plot):
+    tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
-    env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
+    center = np.random.uniform(-0.9, 0.9, 2)
+    env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE, center, seed)
     env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input, annealing)
-    if np.mean(env.rewards[-reward_window:]) > 0.8:
-        return 1
-    else:
-        return 0
+    if plot:
+        env.save_trajectory()
+        env.save_results()
+        if annealing:
+            env.save_dw_day()
+    return np.mean(env.rewards[-100:])
