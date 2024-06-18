@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
 
+# save plots in a folder
 save_dir = "plots"
+
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
     ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
@@ -61,7 +63,7 @@ N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 TRIALS = 1000
-DAYS = 61
+DAYS = 61 # 60 days of learning and 1 day of testing
 
 # modes
 ANNEALING = True
@@ -159,7 +161,6 @@ class Environment:
                     reward_baseline = 0
                 else:
                     reward_baseline = np.mean(self.rewards[-reward_window:-1])
-                    self.reward_baseline = reward_baseline
                 # Updates 
                 # RL update
                 dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg * self.model.bg_influence # RL update
