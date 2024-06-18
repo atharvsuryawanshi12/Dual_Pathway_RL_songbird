@@ -29,7 +29,6 @@ def sigmoid(x, m =0.0 , a=0.0 ):
     return 1 / (1 + np.exp(-1*(x-a)*m))
 
 
-''' Needs tuning to escape local max '''
 RANDOM_SEED = 78 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
@@ -87,7 +86,7 @@ class NN:
         # channel from bg to ra such that motor cortex components are independent of each other
         for i in range(N_BG_CLUSTERS):
             segPath = np.diag(np.ones(N_BG_CLUSTERS, int))[i]
-            self.W_bg_ra[i*bg_size//N_BG_CLUSTERS : (i+1)*bg_size//N_BG_CLUSTERS] *= [j for j in segPath for r in range(RA_SIZE//N_RA_CLUSTERS)]
+            self.W_bg_ra[i*bg_size//N_BG_CLUSTERS : (i+1)*bg_size//N_BG_CLUSTERS] *= [j for j in segPath for r in range(RA_SIZE//N_BG_CLUSTERS)]
 
         self.hvc_size = hvc_size
         self.bg_size = bg_size
