@@ -2,7 +2,7 @@ import numpy as np
 import os 
 import matplotlib.pyplot as plt
 save_dir = "plots"
-TEST_NOS = 20
+TEST_NOS = 30
 seeds = np.random.randint(0, 500, TEST_NOS)
 seeds = np.sort(seeds)
 print("Seeds: ", seeds)
@@ -28,12 +28,16 @@ print(f"Non annealing = {non_annealing_returns}")
 
 
 fig, ax = plt.subplots(1,1) 
-ax.plot(annealing_returns, label='Annealing')
-ax.plot(non_annealing_returns, label='Non-Annealing')
-ax.set_ylim([0, 1])
+ax.plot(annealing_returns, label='Annealing', linewidth=0, marker='o')
+ax.plot(non_annealing_returns, label='Non-Annealing', linewidth=0, marker='o')
+ax.set_ylim(0, 1)
 plt.xticks(np.arange(0, TEST_NOS, step=1), labels=seeds)
 ax.legend()
 ax.set_xlabel('Seeds')
 ax.set_ylabel('Returns')
+plt.hlines(0.7, 0, TEST_NOS, linestyles='dashed')
 fig.suptitle('Results', fontsize=20)
-plt.show()
+# Save the plot
+plt.savefig(os.path.join(save_dir, f"Overall_results.png"))
+plt.close()  # Close the plot to avoid memory leaks
+# plt.show()
