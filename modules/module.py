@@ -14,7 +14,7 @@ from matplotlib.colors import LinearSegmentedColormap
 # save plots in a folder
 save_dir = "plots"
 
-# 2D reward landscapesno
+# 2D reward landscapes
 def gaussian(coordinates, height, mean, spread):
     ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
     x, y = coordinates[0], coordinates[1]
@@ -45,7 +45,7 @@ N_BG_CLUSTERS = 2
 # sigmoid layer parameters
 BG_sig_slope = 2.5  # uniform output 
 BG_sig_mid = 0
-RA_sig_slope = 15 # most steep such that MC output is not skewed
+RA_sig_slope = 18 # most steep such that MC output is not skewed
 RA_sig_mid = 0
 # Sigmoid on MC is removed
 # MC_sig_slope = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
@@ -57,11 +57,11 @@ input = np.zeros(HVC_SIZE)
 input[1] = 1
 BG_noise = 0.1
 
-# Run paraneters
+# Run parameters
 
 N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1.6e-5 # small increase compared to CODE_8
+LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 TRIALS = 1000
 DAYS = 61 # 60 days of learning and 1 day of testing
 
