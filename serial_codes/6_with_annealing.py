@@ -5,13 +5,22 @@ from tqdm import tqdm
 
 '''This model works!
 Full flegged 2D model with two pathways. 
-Need to fine tune noise, learning rates and sigmoid slopes.
-The iterations is low right now, increase to 10000 for better results.'''
+Need to fine tune noise, learning rates and sigmoid slopes.'''
 
 # 2D reward landscapesno
 def gaussian(coordinates, height, mean, spread):
     x, y = coordinates[0], coordinates[1]
     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
+
+center = [-0.9, 0.9]
+def reward_fn(coordinates):
+    reward_scape = gaussian(coordinates, 1, center, 0.8)
+    # for i in range(5):
+    #     height = np.random.uniform(0.0, 0.8)
+    #     mean = np.random.uniform(-1, 1, 2)
+    #     spread = np.random.uniform(0.1, 1)
+    #     reward_scape += gaussian(coordinates, height, mean, spread)
+    return reward_scape
 
 
 def new_sigmoid(x, m=0, a=0):
@@ -41,23 +50,16 @@ input[1] = 1
 BG_noise = 0.1
 
 # Run paraneters
-RANDOM_SEED = 40
+RANDOM_SEED = 42
 LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 1e-4
-TRIALS = 10000
+LEARNING_RATE_HL = 1e-5
+TRIALS = 1000
+DAYS = 60
 
 # modes
-HEBBIAN_LEARNING = False
+ANNEALING = True
+HEBBIAN_LEARNING = True
 balance_factor = 1
-
-
-center = [-0.9, 0.9]
-
-
-def reward_fn(coordinates):
-    # x, y = coordinates[0], coordinates[1]
-    # return np.exp(-((x-0.5)**2 + (y+0.2)**2))
-    return gaussian(coordinates, 1, center, 0.8) #+ gaussian(coordinates, 0.2, [-0.5, 0.2], 0.2)
 
 # Model
 class NN:
@@ -88,6 +90,7 @@ class NN:
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_noise, self.bg_size), m = BG_sig_slope, a = BG_sig_mid)
         self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) + np.dot(hvc_array/num_ones, self.W_hvc_ra) * balance_factor * HEBBIAN_LEARNING, m = RA_sig_slope, a = RA_sig_mid) 
+        ''' even after BG cut off, output should remain still the same'''
         self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_sig_slope, a = MC_sig_mid)
         # self.bg = np.dot(hvc_array/num_ones, self.W_hvc_bg)  #outputs to +-0.98
         # self.ra = np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) + np.dot(hvc_array/num_ones, self.W_hvc_ra) * balance_factor * HEBBIAN_LEARNING #outputs to +-0.40
@@ -103,47 +106,62 @@ class Environment:
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
         self.rewards = []
         self.actions = []
-        self.array = [] # temp
-        self.weights = [] 
+        self.dw_day_array = []
         
     def get_reward(self, action):
         return reward_fn(action)
     
     def run(self, iterations, learning_rate, learning_rate_hl, input_hvc):
-        for iter in tqdm(range(iterations)):
-            # reward and baseline
-            action, ra, bg = self.model.forward(input_hvc)
+        for day in tqdm(range(DAYS)):
+            dw_day = 0
+            for iter in range(iterations):
+                # reward and baseline
+                action, ra, bg = self.model.forward(input_hvc)
 
-            reward = self.get_reward(action)
-            self.rewards.append(reward)
-            self.actions.append(action)
-            # self.array.append(bg)
-            
-            if iter < 1:
-                reward_baseline = 0
-            else:
-                reward_baseline = np.mean(self.rewards[-reward_window:-1])
-            # Updates 
-            # RL update
-            dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg # RL update
-            self.model.W_hvc_bg += dw_hvc_bg
-            # HL update
-            dw_hvc_ra = learning_rate_hl*input_hvc.reshape(self.hvc_size,1)*self.model.ra*HEBBIAN_LEARNING # lr is supposed to be much smaller here
-            self.model.W_hvc_ra += dw_hvc_ra
-            # bound weights between +-1
-            self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
-            self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
-            if iter % (TRIALS/10) == 0:    
-                tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')     
-            self.weights.append(self.model.W_hvc_ra[1,:])
-
+                reward = self.get_reward(action)
+                self.rewards.append(reward)
+                self.actions.append(action)
+                # self.array.append(action)
+                if iter < 1:
+                    reward_baseline = 0
+                else:
+                    reward_baseline = np.mean(self.rewards[-reward_window:-1])
+                # Updates 
+                # RL update
+                dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg # RL update
+                self.model.W_hvc_bg += dw_hvc_bg
+                # HL update
+                dw_hvc_ra = learning_rate_hl*input_hvc.reshape(self.hvc_size,1)*self.model.ra*HEBBIAN_LEARNING # lr is supposed to be much smaller here
+                self.model.W_hvc_ra += dw_hvc_ra
+                # bound weights between +-1
+                self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
+                dw_day = np.mean(np.abs(dw_hvc_bg))
+                # if iter % (TRIALS/10) == 0:    
+                #     tqdm.write(f'Iteration: {iter}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}') 
+            tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')    
+            # Annealing
+            if ANNEALING:
+                ''' input daily sum, output scaling factor for potentiation'''
+                p = dw_day
+                self.dw_day_array.append(p)
+                # tqdm.write(f'{p}')
+                potentiation_factor = np.zeros((self.hvc_size))
+                potentiation_factor[1] = 1-p 
+                night_noise = np.random.uniform(-1, 1, self.bg_size) # make it normal 
+                dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise
+                self.model.W_hvc_bg += dw_night
+                self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
+                
+                
+                
     def plot_results_and_trajectory(self):
         # print(np.max(self.array), np.min(self.array))
         fig, axs = plt.subplots(1, 2, figsize=(10, 5))
         # Plot rewards
         axs[0].plot(self.rewards)
-        axs[0].set_ylim(0, 1)
-        axs[0].set_xlabel('Iterations')
+        # axs[0].set_ylim(0, 1)
+        axs[0].set_xlabel('Time')
         axs[0].set_ylabel('Reward')
         axs[0].set_title('Reward vs Iterations')
 
@@ -156,7 +174,7 @@ class Environment:
         x_traj, y_traj = zip(*self.actions)
         axs[1].plot(x_traj[::10], y_traj[::10], '-b', label='Agent Trajectory', lw = 0.5, alpha = 0.5) # Plot every 20th point for efficiency
         axs[1].scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
-        axs[1].scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Points')
+        axs[1].scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point')
         axs[1].scatter(center[0], center[1], s=20, c='g', marker='x', label='target') 
         # Plot square
         square = patches.Rectangle((-1, -1), 2, 2, linewidth=1, edgecolor='r', facecolor='none')
@@ -168,15 +186,17 @@ class Environment:
         plt.tight_layout()
         plt.show()
     
-    def plot_weights(self):
-        plt.title('Weights from HVC to BG')
-        plt.plot(self.weights)
-        plt.xlabel('Iterations')
-        plt.ylabel('Weights')
+    def plot_dw_day(self):
+        plt.title('Annealing')
+        plt.plot(self.dw_day_array)
+        plt.xlabel('Days')
+        plt.ylabel('dW_day')
         plt.show()
-
-np.random.seed(RANDOM_SEED)
+        
+    
+        
+# np.random.seed(RANDOM_SEED)
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE)
 env.run(TRIALS, LEARING_RATE_RL, LEARNING_RATE_HL, input)
 env.plot_results_and_trajectory()
-env.plot_weights()
+env.plot_dw_day()
