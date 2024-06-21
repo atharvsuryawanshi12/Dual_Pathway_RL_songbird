@@ -1,5 +1,6 @@
 # addition of syllables
-# i died writing this code
+# i died writing this code and it was written wrong,
+# so i will die again writing this code correctly
 
 import os
 import numpy as np 
@@ -29,23 +30,15 @@ def sigmoid(x, m =0.0 , a=0.0 ):
     return 1 / (1 + np.exp(-1*(x-a)*m))
 
 # syllables
-N_SYLL = 2
-if N_SYLL > 5:
-    ValueError('Number of syllables should be less than 5')
 TRIALS = 1000
 DAYS = 61 # 60 days of learning and 1 day of testing
+N_SYLL = 3
+if N_SYLL > 5:
+    ValueError('Number of syllables should be less than 5')
 
-RANDOM_SEED = 21 #np.random.randint(0, 1000)
+RANDOM_SEED = 24 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
-
-# layer sizes
-HVC_SIZE = 100
-BG_SIZE = 50
-RA_SIZE = 100 
-MC_SIZE = 2
-N_RA_CLUSTERS = MC_SIZE
-N_BG_CLUSTERS = 2
 
 # sigmoid layer parameters
 BG_sig_slope = 2.5  # uniform output 
@@ -61,7 +54,6 @@ reward_window = 10
 BG_noise = 0.1
 
 # Run paraneters
-
 N_DISTRACTORS = 10
 LEARING_RATE_RL = 0.1
 LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
@@ -74,6 +66,14 @@ ANNEALING_MID = 2
 HEBBIAN_LEARNING = True
 balance_factor = 2
 BG_influence = True
+
+# layer sizes
+HVC_SIZE = 100
+BG_SIZE = 50
+RA_SIZE = 100 
+MC_SIZE = 2
+N_RA_CLUSTERS = MC_SIZE
+N_BG_CLUSTERS = 2
 
 # Model
 class NN:
@@ -124,14 +124,14 @@ class Environment:
         self.heights = np.random.uniform(0.2, 0.7, (N_SYLL, N_DISTRACTORS))
         self.means = np.random.uniform(-1, 1, (N_SYLL,N_DISTRACTORS, 2))
         self.spreads = np.random.uniform(0.1, 0.6, (N_SYLL, N_DISTRACTORS))
-        self.rewards = np.zeros((N_SYLL, TRIALS*DAYS))
-        self.actions = np.zeros((N_SYLL, TRIALS*DAYS, self.mc_size))
-        self.hvc_bg_array = np.zeros((N_SYLL, TRIALS*DAYS))
-        self.bg_out = np.zeros((N_SYLL, TRIALS*DAYS))
-        self.hvc_ra_array = np.zeros((N_SYLL, TRIALS*DAYS))
-        self.ra_out = np.zeros((N_SYLL, TRIALS*DAYS))
-        self.dw_day_array = np.zeros((N_SYLL, DAYS))
-        self.pot_array = np.zeros((N_SYLL, DAYS))
+        self.rewards = np.zeros((DAYS, TRIALS, N_SYLL))
+        self.actions = np.zeros((DAYS, TRIALS, N_SYLL, self.mc_size))
+        self.hvc_bg_array = np.zeros((DAYS, TRIALS, N_SYLL))
+        self.bg_out = np.zeros((DAYS, TRIALS, N_SYLL))
+        self.hvc_ra_array = np.zeros((DAYS, TRIALS, N_SYLL))
+        self.ra_out = np.zeros((DAYS, TRIALS, N_SYLL))
+        self.dw_day_array = np.zeros((DAYS, N_SYLL))
+        self.pot_array = np.zeros((DAYS, N_SYLL))
         
     def get_reward(self, coordinates, syll):
         center = self.centers[syll, :]
@@ -149,29 +149,26 @@ class Environment:
      
     def run(self, learning_rate, learning_rate_hl, annealing = False):
         self.annealing = annealing
-        for syll in range(N_SYLL):
+        self.model.bg_influence = True
+        for day in tqdm(range(DAYS)):
+            dw_day = np.zeros(N_SYLL)
             self.model.bg_influence = True
-            input_hvc = np.zeros(HVC_SIZE)
-            input_hvc[syll] = 1
-            rewards = np.zeros((DAYS*TRIALS))
-            actions = np.zeros((DAYS*TRIALS, self.mc_size))
-            dw_day_array = np.zeros((DAYS))
-            pot_array = np.zeros((DAYS))
-            index = 0
-            for day in tqdm(range(DAYS)):
-                dw_day = 0
-                if day >= 10:
-                    self.model.bg_influence = False
-                for iter in range(TRIALS):
+            if day >= 60:
+                self.model.bg_influence = False
+            for iter in range(TRIALS):
+                for syll in range(N_SYLL):
+                    input_hvc = np.zeros(HVC_SIZE)
+                    input_hvc[syll] = 1
                     # reward and baseline
                     action, ra, bg = self.model.forward(input_hvc)
                     reward = self.get_reward(action, syll)
-                    rewards[index] = reward
-                    actions[index, :] = action
-                    if index < reward_window:
-                        reward_baseline = 0
-                    else:
-                        reward_baseline = np.mean(rewards[index-reward_window:index])
+                    self.rewards[day, iter, syll] = reward
+                    self.actions[day, iter, syll,:] = action
+                    reward_baseline = 0
+                    if iter < reward_window and iter > 0:
+                        reward_baseline = np.mean(self.rewards[day, :iter, syll])
+                    elif iter >= reward_window:
+                        reward_baseline = np.mean(self.rewards[day, iter-reward_window:iter, syll])
                     # Updates 
                     # RL update
                     dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg * self.model.bg_influence # RL update
@@ -182,33 +179,29 @@ class Environment:
                     # bound weights between +-1
                     self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
                     self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
-                    dw_day += np.mean(np.abs(dw_hvc_bg))
-                    self.hvc_bg_array[syll, index] = self.model.W_hvc_bg[syll,1]
-                    self.bg_out[syll, index] = bg[1]
-                    self.hvc_ra_array[syll, index] = self.model.W_hvc_ra[syll,1]
-                    self.ra_out[syll, index] = ra[1]
+                    dw_day[syll] += np.mean(np.abs(dw_hvc_bg))
+                    self.hvc_bg_array[day, iter, syll] = self.model.W_hvc_bg[syll,1]
+                    self.bg_out[day, iter, syll] = bg[1]
+                    self.hvc_ra_array[day, iter, syll] = self.model.W_hvc_ra[syll,1]
+                    self.ra_out[day, iter, syll] = ra[0]
                     # tqdm.write(f'Day: {day}, Iteration: {iter}, Reward: {reward}, Reward Baseline: {reward_baseline}')
-                    index += 1
-                if day % 1 == 0:   
-                    tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')  
-                # Annealing
-                if annealing:
+            # if day % 1 == 0:   
+            #     tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')  
+            # Annealing
+            if self.annealing:
+                for syll in range(N_SYLL):
                     ''' input daily sum, output scaling factor for potentiation'''
-                    p = dw_day*100
-                    dw_day_array[day] = p
+                    p = dw_day[syll]*100
+                    self.dw_day_array[day, syll] = p
                     p = 1* sigmoid(1*p, m = ANNEALING_SLOPE, a = ANNEALING_MID)
                     potentiation_factor = np.zeros((self.hvc_size))
-                    pot_array[day] = 1 - p
+                    self.pot_array[day, syll] = 1 - p
                     potentiation_factor[syll] = 1-p 
-                    
+                    # print(potentiation_factor)
                     night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
                     dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
                     self.model.W_hvc_bg += dw_night
                     self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
-            self.dw_day_array[syll, :] = dw_day_array
-            self.pot_array[syll, :] = pot_array
-            self.rewards[syll, :] = rewards
-            self.actions[syll, :] = actions
                 
     # def plot_trajectory(self):
     #     fig, axs = plt.subplots(figsize=(10, 9))
@@ -291,7 +284,7 @@ class Environment:
         fig.colorbar(contour, ax=axs, label='Reward')
         
         # plot trajectory
-        x_traj, y_traj = zip(*self.actions[syll, :])
+        x_traj, y_traj = zip(*self.actions[:,:, syll,:].reshape(-1, 2))
         axs.plot(x_traj[::10], y_traj[::10], 'r', label='Agent Trajectory', alpha = 0.5, linewidth = 0.5) # Plot every 20th point for efficiency
         axs.scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
         axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
@@ -314,26 +307,27 @@ class Environment:
         
     def save_results(self, syll):
         fig, axs = plt.subplots(6, 1, figsize=(10, 15))
-        axs[0].plot(self.rewards[syll, :], '.', markersize=1, linestyle='None')
-        axs[0].hlines(0.7, 0, len(self.rewards[syll, :]), colors='r', linestyles='dashed')
+        axs[0].plot(self.rewards[:,:,syll].reshape(DAYS*TRIALS), '.', markersize=1, linestyle='None')
+        axs[0].hlines(0.7, 0, DAYS*TRIALS, colors='r', linestyles='dashed')
         axs[0].set_ylim(0, 1)
         axs[0].set_ylabel('Reward')
-        axs[1].plot(self.hvc_bg_array[syll, :])
+        axs[1].plot(self.hvc_bg_array[:,:,syll].reshape(DAYS*TRIALS))
         axs[1].set_ylim(-1, 1)
         axs[1].set_ylabel('HVC BG weights')
-        axs[2].plot(self.bg_out[syll, :],'.', markersize=0.5, linestyle='None')
+        axs[2].plot(self.bg_out[:,:,syll].reshape(DAYS*TRIALS),'.', markersize=0.5, linestyle='None')
         axs[2].set_ylim(-1, 1)
         axs[2].set_ylabel('BG output')
-        axs[3].plot(self.hvc_ra_array[syll, :])
+        axs[3].plot(self.hvc_ra_array[:,:,syll].reshape(DAYS*TRIALS))
         axs[3].set_ylim(-1, 1)
         axs[3].set_ylabel('HVC RA weights')
-        axs[4].plot(self.actions[syll, :])
+        axs[4].plot(self.actions[:,:,syll,0].reshape(DAYS*TRIALS))
+        axs[4].plot(self.actions[:,:,syll,1].reshape(DAYS*TRIALS))
         axs[4].plot(self.centers[syll, 0]*np.ones(TRIALS*DAYS))
-        axs[4].plot(self.centers[syll, 0]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.centers[syll, 1]*np.ones(TRIALS*DAYS))
         axs[4].legend(['x target', 'y target'])
         axs[4].set_ylabel('Motor Output')
         axs[4].set_ylim(-1, 1)
-        axs[5].plot(self.ra_out[syll, :])
+        axs[5].plot(self.ra_out[:,:,syll].reshape(DAYS*TRIALS))
         axs[5].set_ylim(-1, 1)
         axs[5].set_ylabel('RA activity')
         fig.suptitle('Results', fontsize=20)
@@ -350,13 +344,15 @@ class Environment:
         
     def save_dw_day(self, syll):
         if ANNEALING:
+            expanded_dw_day_array = np.zeros((DAYS*TRIALS, N_SYLL))
+            expanded_pot_array = np.zeros((DAYS*TRIALS, N_SYLL))
             # Expand dw_day_array and pot_array to match the size of rewards
-            expanded_dw_day_array = np.repeat(self.dw_day_array[syll, :], len(self.rewards[syll, :]) // len(self.dw_day_array[syll, :]))
-            expanded_pot_array = np.repeat(self.pot_array[syll, :], len(self.rewards[syll, :]) // len(self.pot_array[syll, :]))
+            expanded_dw_day_array = np.repeat(self.dw_day_array[:, syll], DAYS*TRIALS// len(self.dw_day_array[:, syll]))
+            expanded_pot_array = np.repeat(self.pot_array[:, syll], DAYS*TRIALS// len(self.pot_array[:, syll]))
             plt.title('Annealing')
             plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
             plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
-            plt.plot(self.rewards[syll, :], '.', markersize=1, label='Reward', alpha = 0.1)
+            plt.plot(self.rewards[:,:,syll].reshape(DAYS*TRIALS), '.', markersize=1, label='Reward', alpha = 0.1)
             plt.xlabel('Days')
             plt.ylabel('dW_day')
             plt.legend()
@@ -369,6 +365,7 @@ class Environment:
             # Save the plot
             plt.savefig(os.path.join(save_dir, f"dw_{RANDOM_SEED}_{syll}.png"))
             plt.close()  # Close the plot to avoid memory leaks
+            
     
 env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE, RANDOM_SEED)
 env.run(LEARING_RATE_RL, LEARNING_RATE_HL, ANNEALING)
