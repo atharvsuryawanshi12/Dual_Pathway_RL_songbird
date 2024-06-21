@@ -296,7 +296,7 @@ class Environment:
         axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
         axs.scatter(self.centers[syll, 0], self.centers[syll, 1], s=20, c='y', marker='x', label='target')  # type: ignore
         # labels
-        axs.set_title('Contour plot of reward function')
+        axs.set_title(f'Contour plot of reward function SEED:{RANDOM_SEED} syllable: {syll}')
         axs.set_xlabel('x')
         axs.set_ylabel('y')
         axs.legend()
@@ -336,7 +336,7 @@ class Environment:
         axs[5].plot(self.ra_out[:,:,syll].reshape(DAYS*TRIALS))
         axs[5].set_ylim(-1, 1)
         axs[5].set_ylabel('RA activity')
-        fig.suptitle('Results', fontsize=20)
+        fig.suptitle(f'Results SEED:{RANDOM_SEED} syllable: {syll}', fontsize=20)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         # Create the "plots" directory if it doesn't exist
         os.makedirs(save_dir, exist_ok = True)
@@ -355,7 +355,7 @@ class Environment:
             # Expand dw_day_array and pot_array to match the size of rewards
             expanded_dw_day_array = np.repeat(self.dw_day_array[:, syll], DAYS*TRIALS// len(self.dw_day_array[:, syll]))
             expanded_pot_array = np.repeat(self.pot_array[:, syll], DAYS*TRIALS// len(self.pot_array[:, syll]))
-            plt.title('Annealing')
+            plt.title(f'Annealing SEED:{RANDOM_SEED} syllable: {syll}')
             plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
             plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
             plt.plot(self.rewards[:,:,syll].reshape(DAYS*TRIALS), '.', markersize=1, label='Reward', alpha = 0.1)
