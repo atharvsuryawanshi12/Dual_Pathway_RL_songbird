@@ -1,6 +1,4 @@
 # addition of syllables
-# i died writing this code and it was written wrong,
-# so i will die again writing this code correctly
 
 import os
 import numpy as np 
@@ -10,12 +8,12 @@ from matplotlib.colors import LinearSegmentedColormap
 
 # save plots in a folder
 save_dir = "plots"
-def remove_prev_files():
+def remove_prev_files(): # Clear previous plots (optional):
     os.makedirs(save_dir, exist_ok = True)
     for filename in os.listdir(save_dir):
         os.remove(os.path.join(save_dir, filename))
 
-# 2D reward landscapesno
+# Basic functions
 def gaussian(coordinates, height, mean, spread):
     ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
     x, y = coordinates[0], coordinates[1]
@@ -29,35 +27,15 @@ def sigmoid(x, m =0.0 , a=0.0 ):
     """ Returns an output between 0 and 1 """
     return 1 / (1 + np.exp(-1*(x-a)*m))
 
-# syllables
+# running conditions
 TRIALS = 1000
 DAYS = 61 # 60 days of learning and 1 day of testing
-N_SYLL = 3
-if N_SYLL > 5:
-    ValueError('Number of syllables should be less than 5')
-
-RANDOM_SEED = 24 #np.random.randint(0, 1000)
+N_SYLL = 1
+if N_SYLL > 5 or N_SYLL < 1:
+    ValueError('Invalid number of syllables')
+RANDOM_SEED = 42 #np.random.randint(0, 1000)
 print(f'Random seed is {RANDOM_SEED}')
 np.random.seed(RANDOM_SEED)
-
-# sigmoid layer parameters
-BG_sig_slope = 2.5  # uniform output 
-BG_sig_mid = 0
-RA_sig_slope = 18 # most steep such that MC output is not skewed
-RA_sig_mid = 0
-# Sigmoid on MC is removed
-# MC_sig_slope = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
-# MC_sig_mid = 0
-
-# parameters
-reward_window = 10
-BG_noise = 0.1
-
-# Run paraneters
-N_DISTRACTORS = 10
-LEARING_RATE_RL = 0.1
-LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
-
 
 # modes
 ANNEALING = True
@@ -66,6 +44,24 @@ ANNEALING_MID = 2
 HEBBIAN_LEARNING = True
 balance_factor = 2
 BG_influence = True
+
+# parameters
+REWARD_WINDOW = 10
+BG_NOISE = 0.1
+
+# Run paraneters
+N_DISTRACTORS = 10
+LEARING_RATE_RL = 0.1
+LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
+
+# sigmoid layer parameters
+BG_SIG_SLOPE = 2.5  # uniform output 
+BG_sig_MID = 0
+RA_SIG_SLOPE = 18 # most steep such that MC output is not skewed
+RA_sig_MID = 0
+# Sigmoid on MC is removed
+# MC_SIG_SLOPE = 1 # 5 if lesser -> more difficult to climb the hill, assymptotes before 
+# MC_sig_MID = 0
 
 # layer sizes
 HVC_SIZE = 100
@@ -82,6 +78,7 @@ class NN:
         self.W_hvc_ra = np.zeros((hvc_size, ra_size)) # connections start from 0 and then increase
         self.W_bg_ra = np.random.uniform(0, 1, (bg_size, ra_size)) # const from 0 to 1
         self.W_ra_mc = np.random.uniform(0, 1, (ra_size, mc_size)) # const from 0 to 1
+        # Creating channels
         # channel from ra to mc
         for i in range(N_RA_CLUSTERS):
             segPath = np.diag(np.ones(N_RA_CLUSTERS, int))[i]
@@ -103,13 +100,14 @@ class NN:
         self.hvc = hvc_array
         # count number of 1 in hvc, divide bg by that number
         num_ones = np.count_nonzero(hvc_array == 1)
-        self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_noise, self.bg_size), m = BG_sig_slope, a = BG_sig_mid)
-        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_sig_slope, a = RA_sig_mid) 
+        self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_NOISE, self.bg_size), m = BG_SIG_SLOPE, a = BG_sig_MID)
+        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_SIG_SLOPE, a = RA_sig_MID) 
+        self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         ''' even after BG cut off, output should remain still the same'''
-        # self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_sig_slope, a = MC_sig_mid)
+        # below code is only for testing without sigmoidal functions
+        # self.mc = new_sigmoid(np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)), m = MC_SIG_SLOPE, a = MC_sig_MID)
         # self.bg = np.dot(hvc_array/num_ones, self.W_hvc_bg)  #outputs to +-0.98
         # self.ra = np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor  + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING #outputs to +-0.40
-        self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         return self.mc, self.ra, self.bg
 
 class Environment:
@@ -120,10 +118,12 @@ class Environment:
         self.mc_size = mc_size
         self.seed = seed
         self.model = NN(hvc_size, bg_size, ra_size, mc_size)
+        # landscape parameters
         self.centers = np.random.uniform(-0.9, 0.9, (N_SYLL, 2))
         self.heights = np.random.uniform(0.2, 0.7, (N_SYLL, N_DISTRACTORS))
         self.means = np.random.uniform(-1, 1, (N_SYLL,N_DISTRACTORS, 2))
         self.spreads = np.random.uniform(0.1, 0.6, (N_SYLL, N_DISTRACTORS))
+        # data storage
         self.rewards = np.zeros((DAYS, TRIALS, N_SYLL))
         self.actions = np.zeros((DAYS, TRIALS, N_SYLL, self.mc_size))
         self.hvc_bg_array = np.zeros((DAYS, TRIALS, N_SYLL))
@@ -134,6 +134,7 @@ class Environment:
         self.pot_array = np.zeros((DAYS, N_SYLL))
         
     def get_reward(self, coordinates, syll):
+        # landscape creation and reward calculation
         center = self.centers[syll, :]
         reward_scape = gaussian(coordinates, 1, center, 0.3)
         if N_DISTRACTORS == 0:
@@ -148,28 +149,31 @@ class Environment:
         return np.maximum.reduce(hills)
      
     def run(self, learning_rate, learning_rate_hl, annealing = False):
+        # modes 
         self.annealing = annealing
         self.model.bg_influence = True
+        # each day, 1000 trial, n_syll syllables
         for day in tqdm(range(DAYS)):
             dw_day = np.zeros(N_SYLL)
             self.model.bg_influence = True
-            if day >= 60:
-                self.model.bg_influence = False
+            if day >= DAYS-1: 
+                self.model.bg_influence = False # BG lesion on the last day
             for iter in range(TRIALS):
                 for syll in range(N_SYLL):
+                    # input from HVC is determined by the syllable
                     input_hvc = np.zeros(HVC_SIZE)
                     input_hvc[syll] = 1
-                    # reward and baseline
+                    # reward, action and baseline
                     action, ra, bg = self.model.forward(input_hvc)
                     reward = self.get_reward(action, syll)
                     self.rewards[day, iter, syll] = reward
                     self.actions[day, iter, syll,:] = action
                     reward_baseline = 0
-                    if iter < reward_window and iter > 0:
+                    if iter < REWARD_WINDOW and iter > 0:
                         reward_baseline = np.mean(self.rewards[day, :iter, syll])
-                    elif iter >= reward_window:
-                        reward_baseline = np.mean(self.rewards[day, iter-reward_window:iter, syll])
-                    # Updates 
+                    elif iter >= REWARD_WINDOW:
+                        reward_baseline = np.mean(self.rewards[day, iter-REWARD_WINDOW:iter, syll])
+                    # Updating weights
                     # RL update
                     dw_hvc_bg = learning_rate*(reward - reward_baseline)*input_hvc.reshape(self.hvc_size,1)*self.model.bg * self.model.bg_influence # RL update
                     self.model.W_hvc_bg += dw_hvc_bg
@@ -179,29 +183,31 @@ class Environment:
                     # bound weights between +-1
                     self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
                     self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
+                    # storing values for plotting
                     dw_day[syll] += np.mean(np.abs(dw_hvc_bg))
                     self.hvc_bg_array[day, iter, syll] = self.model.W_hvc_bg[syll,1]
                     self.bg_out[day, iter, syll] = bg[1]
                     self.hvc_ra_array[day, iter, syll] = self.model.W_hvc_ra[syll,1]
                     self.ra_out[day, iter, syll] = ra[0]
-                    # tqdm.write(f'Day: {day}, Iteration: {iter}, Reward: {reward}, Reward Baseline: {reward_baseline}')
             # if day % 1 == 0:   
             #     tqdm.write(f'Day: {day}, Action: {action}, Reward: {reward}, Reward Baseline: {reward_baseline}')  
             # Annealing
             if self.annealing:
                 for syll in range(N_SYLL):
                     ''' input daily sum, output scaling factor for potentiation'''
-                    p = dw_day[syll]*100
-                    self.dw_day_array[day, syll] = p
-                    p = 1* sigmoid(1*p, m = ANNEALING_SLOPE, a = ANNEALING_MID)
+                    # calculating potentiation 
+                    d = dw_day[syll]*100 # scaling up to be comparable
+                    p = 1 * sigmoid(1*d, m = ANNEALING_SLOPE, a = ANNEALING_MID)
                     potentiation_factor = np.zeros((self.hvc_size))
-                    self.pot_array[day, syll] = 1 - p
                     potentiation_factor[syll] = 1-p 
-                    # print(potentiation_factor)
+                    # implementing night weight changes
                     night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
                     dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
                     self.model.W_hvc_bg += dw_night
                     self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
+                    # storing values
+                    self.pot_array[day, syll] = 1-p
+                    self.dw_day_array[day, syll] = d
                 
     # def plot_trajectory(self):
     #     fig, axs = plt.subplots(figsize=(10, 9))
