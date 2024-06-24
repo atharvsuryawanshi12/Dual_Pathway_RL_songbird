@@ -359,8 +359,8 @@ def build_and_run(seed, annealing, plot):
         returns[syll] = np.mean(rewards[-100:], axis=0) 
     return returns
 
-TRIALS = 10
-DAYS = 6
+TRIALS = 1000
+DAYS = 61
 N_SYLL = 3
 TEST_NOS = 20
 seeds = np.random.randint(0,1000,size=TEST_NOS)
