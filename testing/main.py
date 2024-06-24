@@ -90,7 +90,7 @@ ax.set_xlabel('Seeds')
 ax.set_ylabel('Returns')
 plt.hlines(0.7, 0, TEST_NOS, linestyles='dashed')
 fig.suptitle('Results', fontsize=20)
-fig.size = (20, 20)
+
 # Save the plot
 plt.savefig(os.path.join(save_dir, f"Overall_results.png"))
 plt.close()  # Close the plot to avoid memory leaks

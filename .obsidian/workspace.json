@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "testing/README.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "testing/README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "README.md",
+                "file": "testing/README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "README.md"
+                "file": "testing/README.md"
               }
             }
           }
@@ -161,8 +161,9 @@
   },
   "active": "379e12a19e877367",
   "lastOpenFiles": [
-    "serial_codes/README.md",
     "README.md",
+    "testing/README.md",
+    "serial_codes/README.md",
     "serial_codes/images/20240607102834.png",
     "serial_codes/images/Pasted image 20240612165926.png",
     "serial_codes/images/Pasted image 20240612170025.png",
@@ -174,7 +175,6 @@
     "images/Pasted image 20240612170025.png",
     "images/Pasted image 20240612165926.png",
     "images/20240607102701.png",
-    "images",
-    "README.md"
+    "images"
   ]
 }
