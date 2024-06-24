@@ -18,8 +18,21 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "379e12a19e877367",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "source",
+                "source": false
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -85,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "serial_codes/README.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "serial_codes/README.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "serial_codes/README.md"
+                "file": "README.md"
               }
             }
           }
@@ -146,6 +159,22 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "89e45ffb7c289a0e",
-  "lastOpenFiles": []
+  "active": "379e12a19e877367",
+  "lastOpenFiles": [
+    "serial_codes/README.md",
+    "README.md",
+    "serial_codes/images/20240607102834.png",
+    "serial_codes/images/Pasted image 20240612165926.png",
+    "serial_codes/images/Pasted image 20240612170025.png",
+    "serial_codes/images/20240607102701.png",
+    "serial_codes/images/20240607101712.png",
+    "serial_codes/images/20240607095611.png",
+    "serial_codes/images/20240607095346.png",
+    "serial_codes/images",
+    "images/Pasted image 20240612170025.png",
+    "images/Pasted image 20240612165926.png",
+    "images/20240607102701.png",
+    "images",
+    "README.md"
+  ]
 }
