@@ -1,8 +1,5 @@
-# Dual Pathway RL 
-This is a directory to store checkpoint codes and other info.
 
----
-## Code Info and issues addressed
+## Serial codes: Info and issues addressed
 ### 0 Torch REINFORCE: 
 - An RL model working in 1D continuous action space using policy gradient REINFORCE method to output a mean $\mu$ and a standard deviation $\sigma$ to generate and action and learn a reward scape.
 - Biologically not plausible 
@@ -43,3 +40,13 @@ Should be more than influence of direct hebbian learning
 - Similarly we tune RA slope. Now RA is known to be a bursting kind of neuron, thus a skew in output of RA is physiologically relevant, but we also need to make sure output of MC neuron is not skewed despite of skewed inputs from RA. This is done using the slope of RA sigmoid as 18.
 
 ![](images/Pasted%20image%2020240612165926.png) 
+
+### 10 Clustering
+As we have 50 BG neurons, we can plan to divide it in more number of clusters. The number of clusters has to be even such that we do not encounter dependency between $MC_x$ and $MC_y$. 
+Looking at the divisors of 50, we can only see that 2 and 10 are the only possible number of clusters that are possible. Thus, this code implements previous code, but with 10 clusters of BG instead of 2. 
+
+### 11 Multiple syllables
+Here we implement learning of different syllables in motifs. Say the syllables are A, B, C, D. Then ABCD is a motif. This motif is learn over and over again in a given day. 
+
+### 12 Log Normal 
+It is observed that the distribution of synaptic weights in biological neurons is lognormal in nature instead of gaussian or uniform. In order to increase the biological plausibility of the model, this code ensures all the synaptic weights are log-normal in nature.
