@@ -109,7 +109,7 @@ class NN:
             self.W_bg_ra = lognormal_weight((bg_size, ra_size)) # const from 0 to 1
             self.W_ra_mc = lognormal_weight((ra_size, mc_size)) # const from 0 to 1
         else:
-            self.W_hvc_bg = np.random.uniform((hvc_size, bg_size)) # changing from -1 to 1 
+            self.W_hvc_bg = np.random.uniform(-1, 1, (hvc_size, bg_size)) # changing from -1 to 1 
             self.W_hvc_ra = np.zeros((hvc_size, ra_size)) # connections start from 0 and then increase
             self.W_bg_ra = np.random.uniform(0, 1, (bg_size, ra_size)) # const from 0 to 1
             self.W_ra_mc = np.random.uniform(0, 1, (ra_size, mc_size)) # const from 0 to 1
