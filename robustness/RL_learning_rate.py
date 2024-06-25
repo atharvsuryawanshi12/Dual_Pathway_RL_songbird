@@ -362,7 +362,7 @@ def build_and_run(seed, annealing, plot):
 TRIALS = 1000
 DAYS = 61
 N_SYLL = 1
-TEST_NOS = 20
+TEST_NOS = 10
 
 if N_SYLL > 1:
     raise ValueError('N_SYLL should be 1 for this code')
@@ -370,15 +370,13 @@ if N_SYLL > 1:
 seeds = np.random.randint(0,1000,size=TEST_NOS)
 print("Seeds: ", seeds)
 remove_prev_files()
-# reward window initially is 10
 
-
-val_array = [5, 10, 25, 100]
-string = 'Reward Window'
+val_array = [0.01, 0.05, 0.1, 0.2]
+string = 'BG Learning Rate'
 
 returns_overall = np.zeros((len(val_array), len(seeds), N_SYLL))
 for j in range(len(val_array)):
-    REWARD_WINDOW = val_array[j]
+    LEARING_RATE_RL = val_array[j]
     returns1 = np.zeros((len(seeds), N_SYLL))
     for i in tqdm(range(len(seeds))):
         seed = seeds[i]

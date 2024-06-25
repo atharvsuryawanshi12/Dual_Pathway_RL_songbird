@@ -142,7 +142,7 @@ class NN:
         # count number of 1 in hvc, divide bg by that number
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_NOISE, self.bg_size), m = BG_SIG_SLOPE, a = BG_sig_MID)
-        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING + np.random.normal(0, RA_NOISE, self.ra_size)* HEBBIAN_LEARNING, m = RA_SIG_SLOPE, a = RA_sig_MID) 
+        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING + np.random.normal(0, RA_NOISE, self.ra_size), m = RA_SIG_SLOPE, a = RA_sig_MID) 
         self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         ''' even after BG cut off, output should remain still the same'''
         # below code is only for testing without sigmoidal functions
@@ -362,7 +362,7 @@ def build_and_run(seed, annealing, plot):
 TRIALS = 1000
 DAYS = 61
 N_SYLL = 1
-TEST_NOS = 20
+TEST_NOS = 10
 
 if N_SYLL > 1:
     raise ValueError('N_SYLL should be 1 for this code')
@@ -370,15 +370,14 @@ if N_SYLL > 1:
 seeds = np.random.randint(0,1000,size=TEST_NOS)
 print("Seeds: ", seeds)
 remove_prev_files()
-# reward window initially is 10
 
 
-val_array = [5, 10, 25, 100]
-string = 'Reward Window'
+val_array = [0, 0.01, 0.05, 0.1]
+string = 'RA Noise'
 
 returns_overall = np.zeros((len(val_array), len(seeds), N_SYLL))
 for j in range(len(val_array)):
-    REWARD_WINDOW = val_array[j]
+    RA_NOISE = val_array[j]
     returns1 = np.zeros((len(seeds), N_SYLL))
     for i in tqdm(range(len(seeds))):
         seed = seeds[i]
