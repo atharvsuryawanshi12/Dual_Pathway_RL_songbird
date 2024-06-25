@@ -407,7 +407,7 @@ ax.legend()
 ax.set_xlabel('Seeds')
 ax.set_ylabel('Performance %')
 plt.hlines(70, 0, len(seeds), linestyles='dashed')
-fig.suptitle(f'Results on different {string}', fontsize=20)
+fig.suptitle(f'Results for different {string}', fontsize=20)
 fig.set_size_inches(10,6)
 # Save the plot
 plt.savefig(os.path.join(save_dir, f"Overall_results.png"))
