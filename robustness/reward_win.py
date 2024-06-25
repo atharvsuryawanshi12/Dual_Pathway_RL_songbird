@@ -82,6 +82,7 @@ BG_influence = True
 # parameters
 REWARD_WINDOW = 10
 BG_NOISE = 0.1
+RA_NOISE = 0
 
 # Run paraneters
 N_DISTRACTORS = 10
@@ -141,7 +142,7 @@ class NN:
         # count number of 1 in hvc, divide bg by that number
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_NOISE, self.bg_size), m = BG_SIG_SLOPE, a = BG_sig_MID)
-        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING, m = RA_SIG_SLOPE, a = RA_sig_MID) 
+        self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING + np.random.normal(0, RA_NOISE, self.ra_size)* HEBBIAN_LEARNING, m = RA_SIG_SLOPE, a = RA_sig_MID) 
         self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         ''' even after BG cut off, output should remain still the same'''
         # below code is only for testing without sigmoidal functions
@@ -342,7 +343,6 @@ class Environment:
             plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
             plt.close()  # Close the plot to avoid memory leaks         
 
-
 def build_and_run(seed, annealing, plot):
     tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
@@ -364,40 +364,50 @@ DAYS = 61
 N_SYLL = 1
 TEST_NOS = 20
 
+if N_SYLL > 1:
+    raise ValueError('N_SYLL should be 1 for this code')
+
 seeds = np.random.randint(0,1000,size=TEST_NOS)
 print("Seeds: ", seeds)
 remove_prev_files()
 # reward window initially is 10
 
-reward_window_vals = [5, 10, 25, 100]
-returns_overall = np.zeros((len(reward_window_vals), len(seeds), N_SYLL))
-for j in range(len(reward_window_vals)):
-    REWARD_WINDOW = reward_window_vals[j]
+
+val_array = [5, 10, 25, 100]
+string = 'Reward Window'
+
+returns_overall = np.zeros((len(val_array), len(seeds), N_SYLL))
+for j in range(len(val_array)):
+    REWARD_WINDOW = val_array[j]
     returns1 = np.zeros((len(seeds), N_SYLL))
     for i in tqdm(range(len(seeds))):
         seed = seeds[i]
         returns1[i, :] = build_and_run(seed, annealing=True, plot=False)
-        tqdm.write(f"Reward window: {REWARD_WINDOW}, Seed: {seed}, Returns: {returns1[i, :]}")
+        tqdm.write(f"{string}: {val_array[j]}, Seed: {seed}, Returns: {returns1[i, :]}")
     returns_overall[j,:,:] = returns1
 
 # Save results to a text file
 with open(os.path.join(save_dir, "results.txt"), "w") as f:
-    for i in range(len(reward_window_vals)):
-        f.write(f"reward window:{REWARD_WINDOW}\n")
-        np.savetxt(f, returns1, fmt="%.4f")  # Save with 4 decimal places
+    for i in range(len(val_array)):
+        f.write(f"{string}\t{val_array[i]}\n")
+        f.write("Seed\tReturns\n")
+        for j in range(len(seeds)):
+            f.write(f"{seeds[j]}\t{returns_overall[i,j,0]}\n")
+        f.write("\n")
+        # np.savetxt(f, returns_overall[i,:,:], fmt="%.4f")  # Save with 4 decimal places
 
 # plot returns 1 vs 2
 fig, ax = plt.subplots(1,1) 
-for i in range(len(reward_window_vals)):
-    for syll in range(N_SYLL):
-        ax.plot(returns_overall[i,:,:]*100, label=f'Window:{reward_window_vals[i]}, Syll:{syll}', linewidth=0, marker='o')
+for i in range(len(val_array)):
+    # for syll in range(N_SYLL):
+        ax.plot(returns_overall[i,:,:]*100, label=f'{string}:{val_array[i]}', linewidth=0, marker='o')
 ax.set_ylim(0, 100)
 plt.xticks(np.arange(0, len(seeds), step=1), labels=seeds)
 ax.legend()
 ax.set_xlabel('Seeds')
 ax.set_ylabel('Performance %')
 plt.hlines(70, 0, len(seeds), linestyles='dashed')
-fig.suptitle('Results on weight distribtution', fontsize=20)
+fig.suptitle(f'Results on different {string}', fontsize=20)
 fig.set_size_inches(10,6)
 # Save the plot
 plt.savefig(os.path.join(save_dir, f"Overall_results.png"))
