@@ -279,7 +279,7 @@ class Environment:
         #     if filename.startswith("trajectory") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{syll}.png"))
+        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{REWARD_WINDOW}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_results(self, syll):
@@ -316,7 +316,7 @@ class Environment:
         #     if filename.startswith("results") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{syll}.png"))
+        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{REWARD_WINDOW}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_dw_day(self, syll):
@@ -340,7 +340,7 @@ class Environment:
             #     if filename.startswith("dw") and filename.endswith(".png") or filename.endswith(".jpg"):
             #         os.remove(os.path.join(save_dir, filename))
             # Save the plot
-            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
+            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{REWARD_WINDOW}.png"))
             plt.close()  # Close the plot to avoid memory leaks         
 
 def build_and_run(seed, annealing, plot):
@@ -362,7 +362,7 @@ def build_and_run(seed, annealing, plot):
 TRIALS = 1000
 DAYS = 61
 N_SYLL = 1
-TEST_NOS = 20
+TEST_NOS = 10
 
 if N_SYLL > 1:
     raise ValueError('N_SYLL should be 1 for this code')
@@ -392,7 +392,7 @@ with open(os.path.join(save_dir, "results.txt"), "w") as f:
         f.write(f"{string}\t{val_array[i]}\n")
         f.write("Seed\tReturns\n")
         for j in range(len(seeds)):
-            f.write(f"{seeds[j]} \t {returns_overall[i,j,0]}\n")
+            f.write(f"{seeds[j]}\t{returns_overall[i,j,0]}\n")
         f.write("\n")
         # np.savetxt(f, returns_overall[i,:,:], fmt="%.4f")  # Save with 4 decimal places
 

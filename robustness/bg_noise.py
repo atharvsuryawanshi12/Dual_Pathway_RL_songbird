@@ -279,7 +279,7 @@ class Environment:
         #     if filename.startswith("trajectory") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{syll}.png"))
+        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{BG_NOISE}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_results(self, syll):
@@ -316,7 +316,7 @@ class Environment:
         #     if filename.startswith("results") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{syll}.png"))
+        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{BG_NOISE}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_dw_day(self, syll):
@@ -340,7 +340,7 @@ class Environment:
             #     if filename.startswith("dw") and filename.endswith(".png") or filename.endswith(".jpg"):
             #         os.remove(os.path.join(save_dir, filename))
             # Save the plot
-            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
+            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{BG_NOISE}.png"))
             plt.close()  # Close the plot to avoid memory leaks         
 
 def build_and_run(seed, annealing, plot):
@@ -371,7 +371,7 @@ seeds = np.random.randint(0,1000,size=TEST_NOS)
 print("Seeds: ", seeds)
 remove_prev_files()
 
-val_array = [0, 0.1, 0.2, 0.3]
+val_array = [0.01, 0.05, 0.1, 0.2]
 string = 'BG Noise'
 
 returns_overall = np.zeros((len(val_array), len(seeds), N_SYLL))
