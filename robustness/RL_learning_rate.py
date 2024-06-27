@@ -86,7 +86,7 @@ RA_NOISE = 0
 
 # Run paraneters
 N_DISTRACTORS = 10
-LEARING_RATE_RL = 0.1
+LEARNING_RATE_RL = 0.1
 LEARNING_RATE_HL = 2e-5 # small increase compared to CODE_8
 
 # sigmoid layer parameters
@@ -243,7 +243,7 @@ class Environment:
                     potentiation_factor[syll] = 1-p 
                     # implementing night weight changes
                     night_noise = np.random.uniform(-1, 1, self.bg_size) # make it lognormal
-                    dw_night = LEARING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
+                    dw_night = LEARNING_RATE_RL*potentiation_factor.reshape(self.hvc_size,1)*night_noise*10*self.model.bg_influence
                     self.model.W_hvc_bg += dw_night
                     self.model.W_hvc_bg = (self.model.W_hvc_bg + 1) % 2 -1 # bound between -1 and 1 in cyclical manner
                     # storing values
@@ -279,7 +279,7 @@ class Environment:
         #     if filename.startswith("trajectory") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{LEARING_RATE_RL}.png"))
+        plt.savefig(os.path.join(save_dir, f"trajectory_{self.seed}_{LEARNING_RATE_RL}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_results(self, syll):
@@ -316,7 +316,7 @@ class Environment:
         #     if filename.startswith("results") and filename.endswith(".png") or filename.endswith(".jpg"):
         #         os.remove(os.path.join(save_dir, filename))
         # Save the plot
-        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{LEARING_RATE_RL}.png"))
+        plt.savefig(os.path.join(save_dir, f"results_{self.seed}_{LEARNING_RATE_RL}.png"))
         plt.close()  # Close the plot to avoid memory leaks
         
     def save_dw_day(self, syll):
@@ -340,14 +340,14 @@ class Environment:
             #     if filename.startswith("dw") and filename.endswith(".png") or filename.endswith(".jpg"):
             #         os.remove(os.path.join(save_dir, filename))
             # Save the plot
-            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{LEARING_RATE_RL}.png"))
+            plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{LEARNING_RATE_RL}.png"))
             plt.close()  # Close the plot to avoid memory leaks         
 
 def build_and_run(seed, annealing, plot):
     tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
     env = Environment(HVC_SIZE, BG_SIZE, RA_SIZE, MC_SIZE, seed)
-    env.run(LEARING_RATE_RL, LEARNING_RATE_HL, annealing)
+    env.run(LEARNING_RATE_RL, LEARNING_RATE_HL, annealing)
     returns = np.zeros(N_SYLL)
     for syll in (range(N_SYLL)):
         if plot:
@@ -376,7 +376,7 @@ string = 'BG Learning Rate'
 
 returns_overall = np.zeros((len(val_array), len(seeds), N_SYLL))
 for j in range(len(val_array)):
-    LEARING_RATE_RL = val_array[j]
+    LEARNING_RATE_RL = val_array[j]
     returns1 = np.zeros((len(seeds), N_SYLL))
     for i in tqdm(range(len(seeds))):
         seed = seeds[i]
