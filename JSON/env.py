@@ -7,19 +7,13 @@ import json
 # from model import NN
 from functions import *
 
-# load parameters from json file
-params_path = "JSON\params.json"
-# Open the file and read the contents
-with open(params_path, "r") as f:
-    parameters = json.load(f)
-
-DAYS = parameters['run']['DAYS']
-TRIALS = parameters['run']['TRIALS']
-N_SYLL = parameters['run']['N_SYLL']
 
 class Environment:
     def __init__(self, seed, parameters, NN):
         # setting parameters
+        self.DAYS = parameters['run']['DAYS']
+        self.TRIALS = parameters['run']['TRIALS']
+        self.N_SYLL = parameters['run']['N_SYLL']
         self.hvc_size = parameters['layer_sizes']['HVC_SIZE']
         self.bg_size = parameters['layer_sizes']['BG_SIZE']
         self.ra_size = parameters['layer_sizes']['RA_SIZE']
@@ -29,19 +23,19 @@ class Environment:
         # np.random.seed(seed)
         self.model = NN(parameters, seed)
         # landscape parameters
-        self.centers = np.random.uniform(-0.9, 0.9, (N_SYLL, 2))
-        self.heights = np.random.uniform(0.2, 0.7, (N_SYLL, self.n_distractors))
-        self.means = np.random.uniform(-1, 1, (N_SYLL,self.n_distractors, 2))
-        self.spreads = np.random.uniform(0.1, 0.6, (N_SYLL, self.n_distractors))
+        self.centers = np.random.uniform(-0.9, 0.9, (self.N_SYLL, 2))
+        self.heights = np.random.uniform(0.2, 0.7, (self.N_SYLL, self.n_distractors))
+        self.means = np.random.uniform(-1, 1, (self.N_SYLL,self.n_distractors, 2))
+        self.spreads = np.random.uniform(0.1, 0.6, (self.N_SYLL, self.n_distractors))
         # data storage
-        self.rewards = np.zeros((DAYS, TRIALS, N_SYLL))
-        self.actions = np.zeros((DAYS, TRIALS, N_SYLL, self.mc_size))
-        self.hvc_bg_array = np.zeros((DAYS, TRIALS, N_SYLL))
-        self.bg_out = np.zeros((DAYS, TRIALS, N_SYLL))
-        self.hvc_ra_array = np.zeros((DAYS, TRIALS, N_SYLL))
-        self.ra_out = np.zeros((DAYS, TRIALS, N_SYLL))
-        self.dw_day_array = np.zeros((DAYS, N_SYLL))
-        self.pot_array = np.zeros((DAYS, N_SYLL))
+        self.rewards = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
+        self.actions = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL, self.mc_size))
+        self.hvc_bg_array = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
+        self.bg_out = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
+        self.hvc_ra_array = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
+        self.ra_out = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
+        self.dw_day_array = np.zeros((self.DAYS, self.N_SYLL))
+        self.pot_array = np.zeros((self.DAYS, self.N_SYLL))
         
     def get_reward(self, coordinates, syll):
         # landscape creation and reward calculation
@@ -71,13 +65,13 @@ class Environment:
         ANNEALING_MID = parameters['modes']['ANNEALING_MID']
 
         # each day, 1000 trial, n_syll syllables
-        for day in tqdm(range(DAYS)):
-            dw_day = np.zeros(N_SYLL)
+        for day in tqdm(range(self.DAYS)):
+            dw_day = np.zeros(self.N_SYLL)
             self.model.bg_influence = True
-            if day >= DAYS-1: 
+            if day >= self.DAYS-1: 
                 self.model.bg_influence = False # BG lesion on the last day
-            for iter in range(TRIALS):
-                for syll in range(N_SYLL):
+            for iter in range(self.TRIALS):
+                for syll in range(self.N_SYLL):
                     # input from HVC is determined by the syllable
                     input_hvc = np.zeros(self.hvc_size)
                     input_hvc[syll] = 1
@@ -111,7 +105,7 @@ class Environment:
                     self.ra_out[day, iter, syll] = ra[0]
             # Annealing
             if self.annealing:
-                for syll in range(N_SYLL):
+                for syll in range(self.N_SYLL):
                     ''' input daily sum, output scaling factor for potentiation'''
                     # calculating potentiation 
                     d = dw_day[syll]*100 # scaling up to be comparable
@@ -158,27 +152,27 @@ class Environment:
         
     def save_results(self, syll):
         fig, axs = plt.subplots(6, 1, figsize=(10, 15))
-        axs[0].plot(self.rewards[:,:,syll].reshape(DAYS*TRIALS), '.', markersize=1, linestyle='None')
-        axs[0].hlines(0.7, 0, DAYS*TRIALS, colors='r', linestyles='dashed')
+        axs[0].plot(self.rewards[:,:,syll].reshape(self.DAYS*self.TRIALS), '.', markersize=1, linestyle='None')
+        axs[0].hlines(0.7, 0, self.DAYS*self.TRIALS, colors='r', linestyles='dashed')
         axs[0].set_ylim(0, 1)
         axs[0].set_ylabel('Reward')
-        axs[1].plot(self.hvc_bg_array[:,:,syll].reshape(DAYS*TRIALS))
+        axs[1].plot(self.hvc_bg_array[:,:,syll].reshape(self.DAYS*self.TRIALS))
         axs[1].set_ylim(-1, 1)
         axs[1].set_ylabel('HVC BG weights')
-        axs[2].plot(self.bg_out[:,:,syll].reshape(DAYS*TRIALS),'.', markersize=0.5, linestyle='None')
+        axs[2].plot(self.bg_out[:,:,syll].reshape(self.DAYS*self.TRIALS),'.', markersize=0.5, linestyle='None')
         axs[2].set_ylim(-1, 1)
         axs[2].set_ylabel('BG output')
-        axs[3].plot(self.hvc_ra_array[:,:,syll].reshape(DAYS*TRIALS))
+        axs[3].plot(self.hvc_ra_array[:,:,syll].reshape(self.DAYS*self.TRIALS))
         axs[3].set_ylim(-1, 1)
         axs[3].set_ylabel('HVC RA weights')
-        axs[4].plot(self.actions[:,:,syll,0].reshape(DAYS*TRIALS))
-        axs[4].plot(self.actions[:,:,syll,1].reshape(DAYS*TRIALS))
-        axs[4].plot(self.centers[syll, 0]*np.ones(TRIALS*DAYS))
-        axs[4].plot(self.centers[syll, 1]*np.ones(TRIALS*DAYS))
+        axs[4].plot(self.actions[:,:,syll,0].reshape(self.DAYS*self.TRIALS))
+        axs[4].plot(self.actions[:,:,syll,1].reshape(self.DAYS*self.TRIALS))
+        axs[4].plot(self.centers[syll, 0]*np.ones(self.TRIALS*self.DAYS))
+        axs[4].plot(self.centers[syll, 1]*np.ones(self.TRIALS*self.DAYS))
         axs[4].legend(['x target', 'y target'])
         axs[4].set_ylabel('Motor Output')
         axs[4].set_ylim(-1, 1)
-        axs[5].plot(self.ra_out[:,:,syll].reshape(DAYS*TRIALS))
+        axs[5].plot(self.ra_out[:,:,syll].reshape(self.DAYS*self.TRIALS))
         axs[5].set_ylim(-1, 1)
         axs[5].set_ylabel('RA activity')
         fig.suptitle(f'Results SEED:{self.seed} syllable: {syll}', fontsize=20)
@@ -191,15 +185,15 @@ class Environment:
         
     def save_dw_day(self, syll):
         if self.annealing:
-            expanded_dw_day_array = np.zeros((DAYS*TRIALS, N_SYLL))
-            expanded_pot_array = np.zeros((DAYS*TRIALS, N_SYLL))
+            expanded_dw_day_array = np.zeros((self.DAYS*self.TRIALS, self.N_SYLL))
+            expanded_pot_array = np.zeros((self.DAYS*self.TRIALS, self.N_SYLL))
             # Expand dw_day_array and pot_array to match the size of rewards
-            expanded_dw_day_array = np.repeat(self.dw_day_array[:, syll], DAYS*TRIALS// len(self.dw_day_array[:, syll]))
-            expanded_pot_array = np.repeat(self.pot_array[:, syll], DAYS*TRIALS// len(self.pot_array[:, syll]))
+            expanded_dw_day_array = np.repeat(self.dw_day_array[:, syll], self.DAYS*self.TRIALS// len(self.dw_day_array[:, syll]))
+            expanded_pot_array = np.repeat(self.pot_array[:, syll], self.DAYS*self.TRIALS// len(self.pot_array[:, syll]))
             plt.title(f'Annealing SEED:{self.seed} syllable: {syll}')
             plt.plot(expanded_dw_day_array, markersize=1, label='dW_day')
             plt.plot(expanded_pot_array, markersize=1, label='Potentiation factor')
-            plt.plot(self.rewards[:,:,syll].reshape(DAYS*TRIALS), '.', markersize=1, label='Reward', alpha = 0.1)
+            plt.plot(self.rewards[:,:,syll].reshape(self.DAYS*self.TRIALS), '.', markersize=1, label='Reward', alpha = 0.1)
             plt.xlabel('Days')
             plt.ylabel('dW_day')
             plt.legend()
@@ -212,11 +206,11 @@ class Environment:
 
 
 def build_and_run(seed, annealing, plot, parameters, NN):
+    N_SYLL = parameters['run']['N_SYLL']
     tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
     env = Environment(seed, parameters, NN)
     env.run(parameters, annealing)
-    remove_prev_files()
     for i in range(N_SYLL):
         if plot:
             env.save_trajectory(i)

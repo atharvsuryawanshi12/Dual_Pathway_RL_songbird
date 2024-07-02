@@ -15,7 +15,7 @@
     },
     "params": {
       "REWARD_WINDOW": 10,
-      "BG_NOISE": 0.1,
+      "BG_NOISE": 0.2,
       "RA_NOISE": 0.01,
       "N_DISTRACTORS": 10,
       "LEARNING_RATE_RL": 0.1,
