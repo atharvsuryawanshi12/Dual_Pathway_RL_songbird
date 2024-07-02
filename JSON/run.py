@@ -1,11 +1,6 @@
 import json 
 import os
-import numpy as np 
-import matplotlib.pyplot as plt
-from numpy import core
-from tqdm import tqdm
-from matplotlib.colors import LinearSegmentedColormap
-from functions import *
+from functions import remove_prev_files
 from model import NN
 from env import build_and_run
 
