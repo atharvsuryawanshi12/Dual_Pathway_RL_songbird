@@ -1,10 +1,13 @@
 # addition of syllables
 # with log normal distributions for more biological plausibility
-LOG_NORMAL = True
+# better clipping for speed 
+# better gaussian function for speed 
+# better sigmoid function for speed
 
 import os
 import numpy as np 
 import matplotlib.pyplot as plt
+from numpy import core
 from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -17,14 +20,27 @@ def remove_prev_files(): #
         os.remove(os.path.join(save_dir, filename))
 
 # Basic functions
+# def gaussian(coordinates, height, mean, spread):
+#     ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
+#     x, y = coordinates[0], coordinates[1]
+#     return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
+
 def gaussian(coordinates, height, mean, spread):
-    ''' Returns a scalar value for given coordinates in a 2D gaussian distribution'''
+    constant = 1 / (2 * spread**2)  # Pre-compute if spread is constant
     x, y = coordinates[0], coordinates[1]
-    return height * np.exp(-((x-mean[0])**2 + (y-mean[1])**2)/(2*spread**2))
+    diff_x = x - mean[0]
+    diff_y = y - mean[1]
+    return height * np.exp(-constant * (diff_x**2 + diff_y**2))
+
+# def new_sigmoid(x, m=0.0, a=0.0):
+#     """ Returns an output between -1 and 1 """
+#     return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
 
 def new_sigmoid(x, m=0.0, a=0.0):
-    """ Returns an output between -1 and 1 """
-    return (2 / (1 + np.exp(-1*(x-a)*m))) - 1
+    if m != 0.0:  # Check if m is not zero (avoid division by zero)
+        constant = -m * a
+    exp_term = np.exp(constant + (-m * x))
+    return (2 / (1 + exp_term)) - 1
 
 def sigmoid(x, m =0.0 , a=0.0 ):
     """ Returns an output between 0 and 1 """
@@ -71,6 +87,7 @@ ANNEALING = True
 ANNEALING_SLOPE = 4 
 ANNEALING_MID = 2
 HEBBIAN_LEARNING = True
+LOG_NORMAL = False
 balance_factor = 2
 BG_influence = True
 
@@ -109,7 +126,7 @@ class NN:
             self.W_bg_ra = lognormal_weight((bg_size, ra_size)) # const from 0 to 1
             self.W_ra_mc = lognormal_weight((ra_size, mc_size)) # const from 0 to 1
         else:
-            self.W_hvc_bg = np.random.uniform(-1, 1, (hvc_size, bg_size)) # changing from -1 to 1 
+            self.W_hvc_bg = np.random.uniform(-1,1,(hvc_size, bg_size)) # changing from -1 to 1 
             self.W_hvc_ra = np.zeros((hvc_size, ra_size)) # connections start from 0 and then increase
             self.W_bg_ra = np.random.uniform(0, 1, (bg_size, ra_size)) # const from 0 to 1
             self.W_ra_mc = np.random.uniform(0, 1, (ra_size, mc_size)) # const from 0 to 1
@@ -216,8 +233,10 @@ class Environment:
                     dw_hvc_ra = learning_rate_hl*input_hvc.reshape(self.hvc_size,1)*self.model.ra*HEBBIAN_LEARNING # lr is supposed to be much smaller here
                     self.model.W_hvc_ra += dw_hvc_ra
                     # bound weights between +-1
-                    self.model.W_hvc_bg = np.clip(self.model.W_hvc_bg, -1, 1)
-                    self.model.W_hvc_ra = np.clip(self.model.W_hvc_ra, -1, 1)
+                    # np.clip(self.model.W_hvc_bg, -1, 1, out = self.model.W_hvc_bg)
+                    # np.clip(self.model.W_hvc_ra, -1, 1, out = self.model.W_hvc_ra)
+                    np.core.umath.maximum(np.core.umath.minimum(self.model.W_hvc_bg, 1, out = self.model.W_hvc_bg), -1, out = self.model.W_hvc_bg) # type: ignore
+                    np.core.umath.maximum(np.core.umath.minimum(self.model.W_hvc_ra, 1, out = self.model.W_hvc_ra), -1, out = self.model.W_hvc_ra) # type: ignore
                     # storing values for plotting
                     dw_day[syll] += np.mean(np.abs(dw_hvc_bg))
                     self.hvc_bg_array[day, iter, syll] = self.model.W_hvc_bg[syll,1]
