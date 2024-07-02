@@ -7,7 +7,6 @@ import json
 # from model import NN
 from functions import *
 
-
 class Environment:
     def __init__(self, seed, parameters, NN):
         # setting parameters
@@ -203,14 +202,13 @@ class Environment:
             plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
             plt.close()  # Close the plot to avoid memory leaks         
 
-
-
 def build_and_run(seed, annealing, plot, parameters, NN):
     N_SYLL = parameters['run']['N_SYLL']
     tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
     env = Environment(seed, parameters, NN)
     env.run(parameters, annealing)
+
     for i in range(N_SYLL):
         if plot:
             env.save_trajectory(i)
