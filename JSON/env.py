@@ -10,13 +10,13 @@ from functions import *
 class Environment:
     def __init__(self, seed, parameters, NN):
         # setting parameters
-        self.DAYS = parameters['run']['DAYS']
-        self.TRIALS = parameters['run']['TRIALS']
-        self.N_SYLL = parameters['run']['N_SYLL']
-        self.hvc_size = parameters['layer_sizes']['HVC_SIZE']
-        self.bg_size = parameters['layer_sizes']['BG_SIZE']
-        self.ra_size = parameters['layer_sizes']['RA_SIZE']
-        self.mc_size = parameters['layer_sizes']['MC_SIZE']
+        self.DAYS = parameters['params']['DAYS']
+        self.TRIALS = parameters['params']['TRIALS']
+        self.N_SYLL = parameters['params']['N_SYLL']
+        self.hvc_size = parameters['const']['HVC_SIZE']
+        self.bg_size = parameters['const']['BG_SIZE']
+        self.ra_size = parameters['const']['RA_SIZE']
+        self.mc_size = parameters['const']['MC_SIZE']
         self.n_distractors = parameters['params']['N_DISTRACTORS']
         self.seed = seed
         # np.random.seed(seed)
@@ -59,9 +59,9 @@ class Environment:
         self.learning_rate = parameters['params']['LEARNING_RATE_RL']
         learning_rate_hl = parameters['params']['LEARNING_RATE_HL']
         REWARD_WINDOW = parameters['params']['REWARD_WINDOW']
-        HEBBIAN_LEARNING = parameters['modes']['HEBBIAN_LEARNING']
-        ANNEALING_SLOPE = parameters['modes']['ANNEALING_SLOPE']
-        ANNEALING_MID = parameters['modes']['ANNEALING_MID']
+        HEBBIAN_LEARNING = parameters['params']['HEBBIAN_LEARNING']
+        ANNEALING_SLOPE = parameters['params']['ANNEALING_SLOPE']
+        ANNEALING_MID = parameters['params']['ANNEALING_MID']
 
         # each day, 1000 trial, n_syll syllables
         for day in tqdm(range(self.DAYS)):
@@ -123,20 +123,21 @@ class Environment:
     def save_trajectory(self, syll):
         fig, axs = plt.subplots(figsize=(10, 9))
         # generate grid 
-        x, y = np.linspace(-1, 1, 50), np.linspace(-1, 1, 50)
+        limit = 1
+        x, y = np.linspace(-limit,limit, 50), np.linspace(-limit, limit, 50)
         X, Y = np.meshgrid(x, y)
         Z = self.get_reward([X, Y], syll)
         # Plot contour
-        cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'green'])
+        cmap = LinearSegmentedColormap.from_list('white_to_green', ['white', 'black'])
         contour = axs.contourf(X, Y, Z, levels=10, cmap=cmap)
         fig.colorbar(contour, ax=axs, label='Reward')
         
         # plot trajectory
         x_traj, y_traj = zip(*self.actions[:,:, syll,:].reshape(-1, 2))
-        axs.plot(x_traj[::10], y_traj[::10], 'r', label='Agent Trajectory', alpha = 0.5, linewidth = 0.5) # Plot every 20th point for efficiency
-        axs.scatter(x_traj[0], y_traj[0], s=20, c='b', label='Starting Point')  # Plot first point as red circle
-        axs.scatter(x_traj[-5:], y_traj[-5:], s=20, c='r', marker='x', label='Ending Point') # type: ignore
-        axs.scatter(self.centers[syll, 0], self.centers[syll, 1], s=20, c='y', marker='x', label='target')  # type: ignore
+        axs.plot(x_traj[::10], y_traj[::10], 'yellow', label='Agent Trajectory', alpha = 0.2, linewidth = 0, marker='.') # Plot every 20th point for efficiency
+        axs.scatter(x_traj[0], y_traj[0], s=100, c='blue', label='Starting Point', marker = 'x')  # type: ignore # Plot first point as red circle
+        axs.scatter(x_traj[-5:], y_traj[-5:], s=100, c='r', marker='x', label='Ending Point') # type: ignore
+        axs.scatter(self.centers[syll, 0], self.centers[syll, 1], s=50, c='green', marker='x', label='target')  # type: ignore
         # labels
         axs.set_title(f'Contour plot of reward function SEED:{self.seed} syllable: {syll}')
         axs.set_xlabel('x')
@@ -174,6 +175,9 @@ class Environment:
         axs[5].plot(self.ra_out[:,:,syll].reshape(self.DAYS*self.TRIALS))
         axs[5].set_ylim(-1, 1)
         axs[5].set_ylabel('RA activity')
+        axs[5].set_xlabel('Days')
+        for i in range(1,6):
+            axs[i].set_xticks(range(0, self.DAYS*self.TRIALS, 10*self.TRIALS), range(0, self.DAYS, 10))
         fig.suptitle(f'Results SEED:{self.seed} syllable: {syll}', fontsize=20)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         # Create the "plots" directory if it doesn't exist
@@ -203,21 +207,27 @@ class Environment:
             plt.close()  # Close the plot to avoid memory leaks         
 
 def build_and_run(seed, annealing, plot, parameters, NN):
-    N_SYLL = parameters['run']['N_SYLL']
+    N_SYLL = parameters['params']['N_SYLL']
     tqdm.write(f" Random seed is {seed}")
     np.random.seed(seed)
     env = Environment(seed, parameters, NN)
     env.run(parameters, annealing)
-
     for i in range(N_SYLL):
         if plot:
             env.save_trajectory(i)
             env.save_results(i)
             if annealing:
                 env.save_dw_day(i)
-    return np.mean(env.rewards[:,-100:], axis=1)
+        rewards = env.rewards[:,:,0].reshape(env.DAYS*env.TRIALS)
+    return np.mean(rewards[-100:], axis=0)
 
-# running conditions
+
+# # load parameters from json file
+# params_path = "JSON/params.json"
+# # Open the file and read the contents
+# with open(params_path, "r") as f:
+#     parameters = json.load(f)
+# # running conditions
 # env = Environment(5, parameters, NN)
 # env.run(parameters, True)
 # env.save_trajectory(0)

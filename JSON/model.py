@@ -7,7 +7,7 @@ import json
 from functions import *
 
 # # load parameters from json file
-# params_path = "JSON\params.json"
+# params_path = "JSON/params.json"
 # # Open the file and read the contents
 # with open(params_path, "r") as f:
 #     parameters = json.load(f)
@@ -17,14 +17,14 @@ class NN:
     def __init__(self, parameters, seed):
         # setting parameters
         # np.random.seed(seed)
-        self.hvc_size = parameters['layer_sizes']['HVC_SIZE']
-        self.bg_size = parameters['layer_sizes']['BG_SIZE']
-        self.ra_size = parameters['layer_sizes']['RA_SIZE']
-        self.mc_size = parameters['layer_sizes']['MC_SIZE']
-        self.n_ra_clusters = parameters['layer_sizes']['N_RA_CLUSTERS']
-        self.n_bg_clusters = parameters['layer_sizes']['N_BG_CLUSTERS']
-        LOG_NORMAL = parameters['modes']['LOG_NORMAL']
-        self.bg_influence = parameters['modes']['BG_influence']
+        self.hvc_size = parameters['const']['HVC_SIZE']
+        self.bg_size = parameters['const']['BG_SIZE']
+        self.ra_size = parameters['const']['RA_SIZE']
+        self.mc_size = parameters['const']['MC_SIZE']
+        self.n_ra_clusters = parameters['const']['N_RA_CLUSTERS']
+        self.n_bg_clusters = parameters['params']['N_BG_CLUSTERS']
+        LOG_NORMAL = parameters['params']['LOG_NORMAL']
+        self.bg_influence = parameters['params']['BG_influence']
 
         if LOG_NORMAL:
             self.W_hvc_bg = sym_lognormal_samples(minimum = -1, maximum = 1, size = (self.hvc_size, self.bg_size)) # changing from -1 to 1 
@@ -50,12 +50,12 @@ class NN:
     def forward(self, hvc_array, parameters):
         BG_NOISE = parameters['params']['BG_NOISE']
         RA_NOISE = parameters['params']['RA_NOISE']
-        BG_SIG_SLOPE = parameters['sigmoid_layer_parameters']['BG_SIG_SLOPE']
-        RA_SIG_SLOPE = parameters['sigmoid_layer_parameters']['RA_SIG_SLOPE']
-        BG_sig_MID = parameters['sigmoid_layer_parameters']['BG_sig_MID']
-        RA_sig_MID = parameters['sigmoid_layer_parameters']['RA_sig_MID']
-        HEBBIAN_LEARNING = parameters['modes']['HEBBIAN_LEARNING']
-        balance_factor = parameters['modes']['balance_factor']
+        BG_SIG_SLOPE = parameters['params']['BG_SIG_SLOPE']
+        RA_SIG_SLOPE = parameters['params']['RA_SIG_SLOPE']
+        BG_sig_MID = parameters['params']['BG_sig_MID']
+        RA_sig_MID = parameters['params']['RA_sig_MID']
+        HEBBIAN_LEARNING = parameters['params']['HEBBIAN_LEARNING']
+        balance_factor = parameters['params']['balance_factor']
         # count number of 1 in hvc, divide bg by that number
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_NOISE, self.bg_size), m = BG_SIG_SLOPE, a = BG_sig_MID)
@@ -63,7 +63,7 @@ class NN:
         self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         return self.mc, self.ra, self.bg
 
-# nn = NN(parameters)
+# nn = NN(parameters, 0)
 # hvc_array = np.zeros(nn.hvc_size)
 # hvc_array[0] = 1
 # a,b,c = nn.forward(hvc_array, parameters)
