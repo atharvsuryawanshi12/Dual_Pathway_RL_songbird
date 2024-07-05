@@ -32,8 +32,10 @@ for directory in neighboring_directories:
             nos_parameters += 1
     print(f"Number of parameters: {nos_parameters}")
     overall_returns = np.zeros((NOS_SEEDS, nos_parameters))
+    parameter_values = np.zeros(nos_parameters)
     for j, potential_filename in enumerate(os.listdir(directory)):
         if potential_filename.startswith("parameters_") and potential_filename.endswith(".json"):
+            param = potential_filename.split("_")[1].split(".")[0]
             full_filename = os.path.join(directory, potential_filename)
             # load parameters from json file
             with open(full_filename, "r") as f:
@@ -46,4 +48,6 @@ for directory in neighboring_directories:
                 for i, seed in enumerate(seeds):
                     returns[i] = build_and_run(seed, annealing = True, plot = False, parameters = parameters, NN = NN)
                 overall_returns[:, j] = returns
+                parameter_values[j] = param
     np.save(f"{directory}/overall_returns.npy", overall_returns)
+    np.save(f"{directory}/parameter_values.npy", parameter_values)

@@ -18,6 +18,7 @@ class Environment:
         self.ra_size = parameters['const']['RA_SIZE']
         self.mc_size = parameters['const']['MC_SIZE']
         self.n_distractors = parameters['params']['N_DISTRACTORS']
+        self.target_width = parameters['params']['TARGET_WIDTH']
         self.seed = seed
         # np.random.seed(seed)
         self.model = NN(parameters, seed)
@@ -39,7 +40,7 @@ class Environment:
     def get_reward(self, coordinates, syll):
         # landscape creation and reward calculation
         center = self.centers[syll, :]
-        reward_scape = gaussian(coordinates, 1, center, 0.3)
+        reward_scape = gaussian(coordinates, 1, center, self.target_width)
         if self.n_distractors == 0:
             return reward_scape
         hills = []
@@ -123,7 +124,7 @@ class Environment:
     def save_trajectory(self, syll):
         fig, axs = plt.subplots(figsize=(10, 9))
         # generate grid 
-        limit = 1
+        limit = 1.5
         x, y = np.linspace(-limit,limit, 50), np.linspace(-limit, limit, 50)
         X, Y = np.meshgrid(x, y)
         Z = self.get_reward([X, Y], syll)
@@ -140,8 +141,8 @@ class Environment:
         axs.scatter(self.centers[syll, 0], self.centers[syll, 1], s=50, c='green', marker='x', label='target')  # type: ignore
         # labels
         axs.set_title(f'Contour plot of reward function SEED:{self.seed} syllable: {syll}')
-        axs.set_xlabel('x')
-        axs.set_ylabel('y')
+        axs.set_ylabel(r'$P_{\alpha}$')
+        axs.set_xlabel(r'$P_{\beta}$')
         axs.legend()
         plt.tight_layout()
         # Create the "plots" directory if it doesn't exist
@@ -204,7 +205,20 @@ class Environment:
             os.makedirs(save_dir, exist_ok = True)
             # Save the plot
             plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
-            plt.close()  # Close the plot to avoid memory leaks         
+            plt.close()  # Close the plot to avoid memory leaks  
+
+    def plot_combined_returns(self):
+        plt.figure()
+        for i in range(self.N_SYLL):
+            plt.plot(self.rewards[:,:,i].reshape(self.DAYS*self.TRIALS), '.', markersize=0.3, color='pink')
+            lined = np.convolve(self.rewards[:,:,i].reshape(self.DAYS*self.TRIALS), np.ones((100,))/100, mode='same')
+            plt.plot(lined, color='violet')
+        plt.plot(np.convolve(self.rewards.mean(axis = 2).reshape(self.DAYS*self.TRIALS),np.ones((100,))/100, mode='same'), color='black', label='Mean')
+        plt.xlabel('Days')
+        plt.xticks(range(0, self.DAYS*self.TRIALS, 10*self.TRIALS), range(0, self.DAYS, 10))
+        plt.ylabel('Performance Metric')
+        plt.legend()
+        plt.show()
 
 def build_and_run(seed, annealing, plot, parameters, NN):
     N_SYLL = parameters['params']['N_SYLL']
@@ -216,9 +230,10 @@ def build_and_run(seed, annealing, plot, parameters, NN):
         if plot:
             env.save_trajectory(i)
             env.save_results(i)
-            if annealing:
-                env.save_dw_day(i)
+            # if annealing:
+            #     env.save_dw_day(i)
         rewards = env.rewards[:,:,0].reshape(env.DAYS*env.TRIALS)
+    env.plot_combined_returns()
     return np.mean(rewards[-100:], axis=0)
 
 

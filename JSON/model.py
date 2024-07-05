@@ -16,7 +16,7 @@ from functions import *
 class NN:
     def __init__(self, parameters, seed):
         # setting parameters
-        # np.random.seed(seed)
+        np.random.seed(seed)
         self.hvc_size = parameters['const']['HVC_SIZE']
         self.bg_size = parameters['const']['BG_SIZE']
         self.ra_size = parameters['const']['RA_SIZE']
@@ -26,11 +26,11 @@ class NN:
         LOG_NORMAL = parameters['params']['LOG_NORMAL']
         self.bg_influence = parameters['params']['BG_influence']
 
-        if LOG_NORMAL:
+        if LOG_NORMAL: # except ra mc, they need to be uniform
             self.W_hvc_bg = sym_lognormal_samples(minimum = -1, maximum = 1, size = (self.hvc_size, self.bg_size)) # changing from -1 to 1 
             self.W_hvc_ra = np.zeros((self.hvc_size, self.ra_size)) # connections start from 0 and then increase
             self.W_bg_ra = lognormal_weight((self.bg_size, self.ra_size)) # const from 0 to 1
-            self.W_ra_mc = lognormal_weight((self.ra_size, self.mc_size)) # const from 0 to 1
+            self.W_ra_mc = np.random.uniform(0, 1, (self.ra_size, self.mc_size)) # const from 0 to 1  
         else:
             self.W_hvc_bg = np.random.uniform(-1,1,(self.hvc_size, self.bg_size)) # changing from -1 to 1 
             self.W_hvc_ra = np.zeros((self.hvc_size, self.ra_size)) # connections start from 0 and then increase
@@ -60,7 +60,7 @@ class NN:
         num_ones = np.count_nonzero(hvc_array == 1)
         self.bg = new_sigmoid(np.dot(hvc_array/num_ones, self.W_hvc_bg) + np.random.normal(0, BG_NOISE, self.bg_size), m = BG_SIG_SLOPE, a = BG_sig_MID)
         self.ra = new_sigmoid(np.dot(self.bg, self.W_bg_ra/np.sum(self.W_bg_ra, axis=0)) * balance_factor * self.bg_influence + np.dot(hvc_array/num_ones, self.W_hvc_ra)* HEBBIAN_LEARNING + np.random.normal(0, RA_NOISE, self.ra_size)* HEBBIAN_LEARNING, m = RA_SIG_SLOPE, a = RA_sig_MID) 
-        self.mc = np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
+        self.mc = 1.25*np.dot(self.ra, self.W_ra_mc/np.sum(self.W_ra_mc, axis=0)) # outputs to +-0.50
         return self.mc, self.ra, self.bg
 
 # nn = NN(parameters, 0)
