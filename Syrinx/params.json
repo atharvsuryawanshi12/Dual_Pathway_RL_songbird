@@ -12,7 +12,7 @@
     "LOG_NORMAL": 1,
     "balance_factor": 2,
     "BG_influence": 1,
-    "SYRINX_LANDSCAPE": 0, 
+    "SYRINX_LANDSCAPE": 1, 
 
     "REWARD_WINDOW": 10,
 

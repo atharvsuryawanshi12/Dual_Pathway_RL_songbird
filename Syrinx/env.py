@@ -181,14 +181,6 @@ class Environment:
             axs.scatter(x_traj[0], y_traj[0], s=100, c='blue', label='Starting Point', marker = 'x')  # type: ignore # Plot first point as red circle
             axs.scatter(x_traj[-5:], y_traj[-5:], s=100, c='r', marker='x', label='Ending Point') # type: ignore
             axs.scatter(targetpos[0], targetpos[1], s=100, c='pink', marker='x', label='target')  # type: ignore
-        
-        # # plot trajectory
-        # x_traj, y_traj = zip(*self.actions[:,:, syll,:].reshape(-1, 2))
-        # axs.plot(x_traj[::10], y_traj[::10], 'yellow', label='Agent Trajectory', alpha = 0.05, linewidth = 0, marker='.') # Plot every 20th point for efficiency
-        # axs.scatter(x_traj[0], y_traj[0], s=100, c='blue', label='Starting Point', marker = 'x')  # type: ignore # Plot first point as red circle
-        # axs.scatter(x_traj[-5:], y_traj[-5:], s=100, c='r', marker='x', label='Ending Point') # type: ignore
-
-        # labels
         axs.set_title(f'Contour plot of reward function SEED:{self.seed} syllable: {syll}')
         axs.set_ylabel(r'$P_{\alpha}$')
         axs.set_xlabel(r'$P_{\beta}$')
