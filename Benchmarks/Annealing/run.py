@@ -10,6 +10,6 @@ with open(params_path, "r") as f:
     parameters = json.load(f)
 # running conditions
 
-RANDOM_SEED = 1
+RANDOM_SEED = 2
 remove_prev_files()
 print(build_and_run(RANDOM_SEED, plot = True, parameters = parameters, NN = NN))
