@@ -3,8 +3,6 @@ import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from matplotlib.colors import LinearSegmentedColormap
-import json
-from model import NN
 from functions import *
 
 class Environment:
@@ -29,6 +27,8 @@ class Environment:
         # data storage
         self.rewards = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL))
         self.actions = np.zeros((self.DAYS, self.TRIALS, self.N_SYLL, self.out_size))
+        q = np.linspace(0, 10, self.DAYS * self.TRIALS + 1)[1:]
+        self.Temperature = parameters['params']['TEMPERATURE']*(1-np.exp(-1/q))
         
     def get_reward(self, coordinates, syll):
         # landscape creation and reward calculation
@@ -48,12 +48,11 @@ class Environment:
     def run(self, parameters):
         # learning parameters
         self.learning_rate = parameters['params']['LEARNING_RATE_RL']
-        self.temperature = parameters['params']['TEMPERATURE']
         # each day, 1000 trial, n_syll syllables
-        iter = 0
         prev_reward = 0
-        noise = 0.01
-        action = np.random.uniform(-1, 1, self.out_size)
+        noise = parameters['params']['NOISE']
+        action = np.random.uniform(-1.5, 1.5, self.out_size)
+        iter = 0
         for day in tqdm(range(self.DAYS)):
             for trial in range(self.TRIALS):
                 for syll in range(self.N_SYLL):
@@ -61,11 +60,12 @@ class Environment:
                     action_potential = self.model.forward(action, noise, parameters, iter)
                     reward_potential = self.get_reward(action_potential, syll)
                     difference_reward = reward_potential - prev_reward
-                    acceptance_probability = np.exp(difference_reward/self.temperature)
+                    acceptance_probability = np.exp(difference_reward/self.Temperature[iter])
                     if difference_reward > 0 or np.random.uniform(0,1) < acceptance_probability:
                         reward = reward_potential
                         action = action_potential
-                        prev_reward = reward
+                    # print(f"Day: {day}, Diff: {difference_reward:.2f} Temperature: {self.Temperature[iter]:.3f} Ratio: {difference_reward/self.Temperature[iter]:.2f} Prob: {acceptance_probability:.2f}")
+                    prev_reward = reward
                     self.rewards[day, trial, syll] = reward
                     self.actions[day, trial, syll,:] = action
                     iter += 1
@@ -155,13 +155,14 @@ def build_and_run(seed, plot, parameters, NN):
 
 
 # load parameters from json file
-params_path = "params.json"
+# params_path = "Benchmarks/annealing/params.json"
+# params_path = "params.json"
 # Open the file and read the contents
-with open(params_path, "r") as f:
-    parameters = json.load(f)
-# running conditions
-seed = 26
-env = Environment(seed, parameters, NN)
-env.run(parameters)
-env.save_trajectory(0)
-env.save_results(0)
+# with open(params_path, "r") as f:
+#     parameters = json.load(f)
+# # running conditions
+# seed = 41
+# env = Environment(seed, parameters, NN)
+# env.run(parameters)
+# env.save_trajectory(0)
+# env.save_results(0)
