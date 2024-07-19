@@ -6,7 +6,7 @@ from env import build_and_run
 import numpy as np
 
 
-NOS_SEEDS = 1
+NOS_SEEDS = 10
 
 neighboring_directories = find_neighboring_directories()
 for directory in neighboring_directories:

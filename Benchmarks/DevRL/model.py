@@ -1,9 +1,4 @@
 import numpy as np
-import os
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-from matplotlib.colors import LinearSegmentedColormap
-import json
 from functions import *
 
 # # load parameters from json file
