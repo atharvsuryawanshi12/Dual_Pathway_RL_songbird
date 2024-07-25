@@ -16,7 +16,7 @@
       "REWARD_WINDOW": 10,
 
       "BG_NOISE": 10,
-      "DECAY_FACTOR": 5,
+      "DECAY_FACTOR": 2.2,
       "RA_NOISE": 0.01,
 
       "N_DISTRACTORS": 10,

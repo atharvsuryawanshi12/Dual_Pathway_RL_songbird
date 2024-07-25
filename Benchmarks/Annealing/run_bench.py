@@ -5,7 +5,10 @@ from model import NN
 from env import build_and_run
 import numpy as np
 
-NOS_SEEDS = 10
+NOS_SEEDS = 100
+np.random.seed(0)
+seeds = np.random.randint(0, 1000, NOS_SEEDS)
+seeds.sort()
 
 neighboring_directories = find_neighboring_directories()
 for directory in neighboring_directories:
@@ -22,8 +25,6 @@ for directory in neighboring_directories:
         print(f"Deleted NumPy file: {np_path2}")
 
 for directory in neighboring_directories:
-    seeds = np.random.randint(0, 1000, NOS_SEEDS)
-    seeds.sort()
     # load parameters from json file
     nos_parameters = 0
     print(f"Seeds: {seeds}")

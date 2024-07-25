@@ -5,13 +5,13 @@
       "N_SYLL": 1
     },
     "modes": {
-      "ANNEALING": true,
+      "ANNEALING": 1,
       "ANNEALING_SLOPE": 4,
       "ANNEALING_MID": 2,
-      "HEBBIAN_LEARNING": true,
-      "LOG_NORMAL": true,
+      "HEBBIAN_LEARNING": 1,
+      "LOG_NORMAL": 1,
       "balance_factor": 2,
-      "BG_influence": true
+      "BG_influence": 1
     },
     "params": {
       "REWARD_WINDOW": 10,
