@@ -1,14 +1,18 @@
 import numpy as np
 import os
 
-
 # save plots in a folder
 save_dir = "plots"
-def remove_prev_files(): # 
+results_dir = "results"
+def remove_prev_files(directory): # 
     '''removes previous files in the directory'''
-    os.makedirs(save_dir, exist_ok = True)
-    for filename in os.listdir(save_dir):
-        os.remove(os.path.join(save_dir, filename))
+    os.makedirs(directory, exist_ok = True)
+    for filename in os.listdir(directory):
+        os.remove(os.path.join(directory, filename))
+
+def make_dir(directory):
+    '''makes a directory if it does not exist'''
+    os.makedirs(directory, exist_ok = True)
 
 # Basic functions
 def gaussian(coordinates, height, mean, spread):

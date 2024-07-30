@@ -1,13 +1,13 @@
 import json 
 import os
-from functions import remove_prev_files
+from functions import remove_prev_files, make_dir
 from model import NN
 from env import build_and_run
 
 # load parameters from json file
-params_path = "JSON/params.json"
+params_path = "params.json"
 # Open the file and read the contents
-with open(params_path, "r") as f:
+with open(params_path, "r") as f: 
     parameters = json.load(f)
 
 
@@ -18,6 +18,8 @@ ANNEALING = parameters['params']['ANNEALING']
 # if N_SYLL > 5 or N_SYLL < 1:
 #     ValueError('Invalid number of syllables')
 RANDOM_SEED = 13
-remove_prev_files()
-print(build_and_run(RANDOM_SEED, annealing = ANNEALING, plot = True, parameters = parameters, NN = NN))
+remove_prev_files("plots")
+make_dir("results")
+remove_prev_files("results")
+print(build_and_run(RANDOM_SEED, annealing = ANNEALING, plot = False, parameters = parameters, NN = NN))
 # build_and_run(RANDOM_SEED, annealing = ANNEALING, plot = True, parameters = parameters1, NN = NN)

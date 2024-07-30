@@ -124,8 +124,8 @@ class Environment:
     def save_trajectory(self, syll):
         fig, axs = plt.subplots(figsize=(10, 9))
         # generate grid 
-        limit = 1.5
-        x, y = np.linspace(-limit,limit, 50), np.linspace(-limit, limit, 50)
+        self.limit = 1.5
+        x, y = np.linspace(-self.limit,self.limit, 50), np.linspace(-self.limit, self.limit, 50)
         X, Y = np.meshgrid(x, y)
         Z = self.get_reward([X, Y], syll)
         # Plot contour
@@ -207,6 +207,14 @@ class Environment:
             plt.savefig(os.path.join(save_dir, f"dw_{self.seed}_{syll}.png"))
             plt.close()  # Close the plot to avoid memory leaks  
 
+    def export_trajectory(self, syll):
+        # export trajectory to npy file
+        np.save(os.path.join(results_dir, f"trajectory_{self.seed}_{syll}.npy"), self.actions[:,:,syll,:].reshape(-1,2))
+
+    def export_landscape(self, syll):
+        self.limit = 1.5
+        np.save(os.path.join(results_dir, f"landscape_{self.seed}_{syll}.npy"), self.get_reward(np.meshgrid(np.linspace(-self.limit, self.limit, 50), np.linspace(-self.limit,self.limit, 50)), syll))
+
     def plot_combined_returns(self):
         plt.figure()
         for i in range(self.N_SYLL):
@@ -227,14 +235,16 @@ def build_and_run(seed, annealing, plot, parameters, NN):
     env = Environment(seed, parameters, NN)
     env.run(parameters, annealing)
     for i in range(N_SYLL):
+        env.export_trajectory(i)
+        env.export_landscape(i)
         if plot:
             env.save_trajectory(i)
             env.save_results(i)
             # if annealing:
             #     env.save_dw_day(i)
         rewards = env.rewards[:,:,0].reshape(env.DAYS*env.TRIALS)
-    env.plot_combined_returns()
-    return np.mean(rewards[-100:], axis=0)
+    # env.plot_combined_returns()
+    return np.mean(rewards[-100:], axis=0), np.mean(rewards[(env.DAYS-1)*env.TRIALS-100:(env.DAYS-1)*env.TRIALS], axis=0)
 
 
 # # load parameters from json file
