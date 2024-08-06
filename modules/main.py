@@ -25,7 +25,8 @@ for i in tqdm(range(TEST_NOS)):
     returns = build_and_run(seed, False, True)
     non_annealing_returns.append(returns)
 print(f"Annealing = {annealing_returns} ")
-print(f"Non annealing = {non_annealing_returns}")
+print(f"Non annealing = {non_annealing_returns}")  
+
 
 
 fig, ax = plt.subplots(1,1) 
