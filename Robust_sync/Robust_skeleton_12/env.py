@@ -67,6 +67,7 @@ class Environment:
         ANNEALING_MID = parameters['params']['ANNEALING_MID']
         WEIGHT_JUMP = parameters['params']['WEIGHT_JUMP']
         JUMP_MID = parameters['params']['JUMP_MID']
+        JUMP_SLOPE = parameters['params']['JUMP_SLOPE']
 
         # each day, 1000 trial, n_syll syllables
         for day in tqdm(range(self.DAYS)):
@@ -132,7 +133,7 @@ class Environment:
                     else:
                         # an alternate way of jumping! 
                         rpe_sum_end_of_day = self.RPE_SUM[day, iter, syll]
-                        potentiation_factor = 1 - sigmoid(rpe_sum_end_of_day, m = 4, a = JUMP_MID)
+                        potentiation_factor = 1 - sigmoid(rpe_sum_end_of_day, m = JUMP_SLOPE, a = JUMP_MID)
                         night_noise = np.random.uniform(-1, 1, (self.hvc_size, self.bg_size))   
                         dw_night = self.learning_rate*potentiation_factor*night_noise*10*self.model.bg_influence
                         self.model.W_hvc_bg += dw_night

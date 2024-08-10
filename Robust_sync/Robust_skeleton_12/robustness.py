@@ -14,7 +14,7 @@ NOS_SEEDS = 20
 np.random.seed(1)
 seeds = np.random.randint(0, 1000, NOS_SEEDS)
 seeds.sort()
-wanted_directories = ["JUMP_MID"]#["ANNEALING", "BG_NOISE", "LEARNING_RATE_HL", "LEARNING_RATE_RL", "RA_NOISE", "N_BG_CLUSTERS", "N_DISTRACTORS", "REWARD_WINDOW", "TARGET_WIDTH"]                                       
+wanted_directories = ["JUMP_SLOPE"]#["ANNEALING", "BG_NOISE", "LEARNING_RATE_HL", "LEARNING_RATE_RL", "RA_NOISE", "N_BG_CLUSTERS", "N_DISTRACTORS", "REWARD_WINDOW", "TARGET_WIDTH"]                                       
 neighboring_directories = find_neighboring_directories()
 for directory in neighboring_directories:
     if directory in wanted_directories:
