@@ -65,6 +65,7 @@ RA_SIG_SLOPE_values = [9, 18]
 TARGET_WIDTH_values = [0.1, 0.2, 0.3, 0.5, 0.7]
 ANNEALING_SLOPE_values = [1,2,3,4,5,6]
 ANNEALING_MID_values = [1,2,3,4]
+BG_SIG_SLOPE_values = [2, 2.5, 3, 3.5, 4]
 WEIGHT_JUMP_values = [0,1]
 JUMP_MID_values = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 JUMP_SLOPE_values = [1,2,3,4,5]
@@ -82,6 +83,7 @@ parameter_names = {
     "REWARD_WINDOW": REWARD_WINDOW_values,
     "ANNEALING": ANNEALING_values,
     "RA_SIG_SLOPE": RA_SIG_SLOPE_values,
+    "BG_SIG_SLOPE": BG_SIG_SLOPE_values,
     "TARGET_WIDTH": TARGET_WIDTH_values,
     "ANNEALING_SLOPE": ANNEALING_SLOPE_values,
     "ANNEALING_MID": ANNEALING_MID_values,
