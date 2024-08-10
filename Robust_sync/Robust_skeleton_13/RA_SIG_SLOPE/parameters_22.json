@@ -22,7 +22,7 @@
     "LEARNING_RATE_HL": 2e-05,
     "BG_SIG_SLOPE": 2.5,
     "BG_sig_MID": 0,
-    "RA_SIG_SLOPE": 9,
+    "RA_SIG_SLOPE": 22,
     "RA_sig_MID": 0,
     "N_BG_CLUSTERS": 2
   },
