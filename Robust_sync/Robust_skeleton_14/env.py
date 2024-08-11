@@ -65,6 +65,7 @@ class Environment:
         HEBBIAN_LEARNING = parameters['params']['HEBBIAN_LEARNING']
         ANNEALING_SLOPE = parameters['params']['ANNEALING_SLOPE']
         ANNEALING_MID = parameters['params']['ANNEALING_MID']
+        ANNEALING_MID_DECAY = parameters['params']['ANNEALING_MID_DECAY']
         WEIGHT_JUMP = parameters['params']['WEIGHT_JUMP']
         JUMP_MID = parameters['params']['JUMP_MID']
         JUMP_SLOPE = parameters['params']['JUMP_SLOPE']
@@ -119,7 +120,8 @@ class Environment:
                         ''' input daily sum, output scaling factor for potentiation'''
                         # calculating potentiation 
                         d = dw_day[syll]*100 # scaling up to be comparable
-                        p = 1 * sigmoid(1*d, m = ANNEALING_SLOPE, a = ANNEALING_MID)
+                        annealing_mid_final = ANNEALING_MID*np.exp(-ANNEALING_MID_DECAY*day/60)
+                        p = 1 * sigmoid(1*d, m = annealing_mid_final, a = ANNEALING_MID)
                         potentiation_factor = np.zeros((self.hvc_size))
                         potentiation_factor[syll] = 1-p 
                         # implementing night weight changes
