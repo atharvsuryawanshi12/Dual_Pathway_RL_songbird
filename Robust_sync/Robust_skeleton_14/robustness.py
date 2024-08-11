@@ -11,10 +11,10 @@ from env import build_and_run
 from functions import find_neighboring_directories
 
 NOS_SEEDS = 50
-np.random.seed(2)
+np.random.seed(3)
 seeds = np.random.randint(0, 1000, NOS_SEEDS)
 seeds.sort()
-wanted_directories = ["ANNEALING_MID_DECAY"]#["ANNEALING", "BG_NOISE", "LEARNING_RATE_HL", "LEARNING_RATE_RL", "RA_NOISE", "N_BG_CLUSTERS", "N_DISTRACTORS", "REWARD_WINDOW", "TARGET_WIDTH"]                                       
+wanted_directories = ["ANNEALING_MID"]#["ANNEALING", "BG_NOISE", "LEARNING_RATE_HL", "LEARNING_RATE_RL", "RA_NOISE", "N_BG_CLUSTERS", "N_DISTRACTORS", "REWARD_WINDOW", "TARGET_WIDTH"]                                       
 neighboring_directories = find_neighboring_directories()
 for directory in neighboring_directories:
     if directory in wanted_directories:
