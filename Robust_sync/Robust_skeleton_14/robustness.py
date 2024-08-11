@@ -10,8 +10,8 @@ from model import NN
 from env import build_and_run
 from functions import find_neighboring_directories
 
-NOS_SEEDS = 20
-np.random.seed(1)
+NOS_SEEDS = 50
+np.random.seed(2)
 seeds = np.random.randint(0, 1000, NOS_SEEDS)
 seeds.sort()
 wanted_directories = ["ANNEALING_MID_DECAY"]#["ANNEALING", "BG_NOISE", "LEARNING_RATE_HL", "LEARNING_RATE_RL", "RA_NOISE", "N_BG_CLUSTERS", "N_DISTRACTORS", "REWARD_WINDOW", "TARGET_WIDTH"]                                       
